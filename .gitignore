@@ -1,0 +1,13 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.asar
+*.log
+accounts.json
+settings.json
+income.json
+plugin-data/
+Partitions/
+Cookies*

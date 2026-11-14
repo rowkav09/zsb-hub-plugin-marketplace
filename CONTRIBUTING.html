@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Contributing for ZSB Hub plugins.">
+  <meta name="color-scheme" content="dark">
+  <title>Contributing · ZSB Plugin Exchange</title>
+  <link rel="stylesheet" href="site/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ZSB Plugin Exchange</a>
+      <nav aria-label="Main navigation">
+        <a href="index.html">Marketplace</a>
+        <a href="docs/install.html">Install</a>
+        <a href="docs/framework.html">Framework</a>
+        <a href="docs/authoring.html">Build a plugin</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap docs">
+    <nav class="doc-nav" aria-label="Documentation"><a href="docs/install.html">Installation</a><a href="docs/framework.html">Framework</a><a href="docs/authoring.html">Authoring</a><a href="docs/distribution.html">Distribution</a><a href="CONTRIBUTING.html" aria-current="page">Contributing</a></nav>
+    <article class="prose"><h1>Contribute a plugin</h1>
+<p>Open a pull request against the repository's <code>main</code> branch with a catalog entry. New entries should use a unique ID, identify the author and license, state the minimum supported core, and describe what the plugin reads or changes. Include a versioned ZIP and its SHA-256 along with inspectable source.</p>
+<p>For plugins maintained in this repository:</p>
+<ol>
+<li>Add a directory under <code>plugins/&lt;id&gt;/</code> containing the manifest, entry point and documentation.</li>
+<li>Run <code>python3 scripts/pack.py plugins/&lt;id&gt; -o downloads/&lt;id&gt;-&lt;version&gt;.zip</code>. Use <code>-a LICENSE</code> to add the repository license if your plugin uses it and the directory lacks its own copy.</li>
+<li>Add a <code>community</code> entry to <code>catalog.json</code>. Use Account Pulse as an example. Copy the SHA-256 printed by the pack command, and state that an unsigned build requires <strong>Allow unverified plugins</strong>.</li>
+<li>Run <code>npm ci</code>, <code>npm run build</code>, and <code>npm run check</code>. Include the generated pages with the catalog change.</li>
+<li>Include how you tested installation, the ZSB Hub build, and any account operations exercised.</li>
+</ol>
+<p>Ship only files needed by the plugin and its license. Use fixtures with invented account data when testing.</p>
+<p><a href="docs/authoring.html">Author guide</a> · <a href="docs/distribution.html">Package and signature formats</a></p>
+</article>
+  </main>
+  <footer>
+    <div><strong>ZSB Plugin Exchange</strong><span>Independent community project for ZSB Hub.</span></div>
+    <a href="CONTRIBUTING.html">Contribute</a>
+    <a href="catalog.json">Catalog JSON</a>
+    <a href="https://github.com/GothGirlZSB/zsb-hub-releases">Publisher releases ↗</a>
+  </footer>
+</body>
+</html>

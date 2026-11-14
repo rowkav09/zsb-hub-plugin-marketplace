@@ -1,0 +1,224 @@
+{
+  "format": 1,
+  "appVersion": "1.2.7-beta.1",
+  "appRelease": "https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1",
+  "publisherFeed": {
+    "updatedAt": "2026-11-13T14:01:50.151Z",
+    "commit": "37cd27f8b422d928e729d7082d9b1ea601990b5a",
+    "source": "https://github.com/GothGirlZSB/zsb-hub-releases",
+    "files": "https://raw.githubusercontent.com/GothGirlZSB/zsb-hub-releases/37cd27f8b422d928e729d7082d9b1ea601990b5a/plugins/"
+  },
+  "plugins": [
+    {
+      "id": "armory",
+      "name": "Armory",
+      "kind": "bundled",
+      "category": "Farming",
+      "summary": "Farm Armory stars and maintain passes with configurable game rotations.",
+      "overview": "Armory rotates selected accounts through games that award pass XP. It can maintain passes in live mode and gives users a separate shop for spending credits.",
+      "integration": "Shares its account and game plan with Games. Tracks busy accounts and yields to waiting Trader routes after in-flight work finishes.",
+      "operation": "Auto farming and manual shop",
+      "version": "1.15.0",
+      "minCore": "1.2.5",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.14.4",
+        "file": "armory-1.14.4.json",
+        "sha256": "cccfbc3d38fe036a5fd25f889dc57594dc1624e01128cf153716e462d3de4832",
+        "size": 126673,
+        "minCore": "1.2.5"
+      }
+    },
+    {
+      "id": "games",
+      "name": "Games",
+      "kind": "bundled",
+      "category": "Farming",
+      "summary": "Work toward game reward tiers or contribute XP to Armory passes.",
+      "overview": "Games models the expected token cost of reaching the next reward tier and tracks bets, rewards and net results. The XP mode targets Armory progress. Actual results can vary.",
+      "integration": "Uses routed requests for some games and sockets for crash and blackjack. Reads the Armory plan and avoids accounts being seated in battles.",
+      "operation": "Scheduled farming",
+      "version": "1.8.0",
+      "minCore": "1.2.5",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.8.0",
+        "file": "games-1.8.0.json",
+        "sha256": "40dd3fea2a7d8b50bcd867f464a6b1905a6858e4e35ca2ee88145b3861089632",
+        "size": 49788,
+        "minCore": "1.2.5"
+      }
+    },
+    {
+      "id": "missions",
+      "name": "Missions",
+      "kind": "bundled",
+      "category": "Rewards",
+      "summary": "Claim completed missions and show progress on clicking accounts.",
+      "overview": "Missions polls each healthy account, claims eligible mission rewards, and displays progress in a Missions tab and account-card badges.",
+      "integration": "Uses staggered per-account scheduling and clears the cached account view when a run stops.",
+      "operation": "Enabled by default",
+      "version": "1.1.0",
+      "minCore": "1.0.6",
+      "defaultEnabled": true,
+      "publisher": {
+        "version": "1.1.0",
+        "file": "missions-1.1.0.json",
+        "sha256": "526f778c3a419b04f5d1a81193adddf5f2db820a4e8daf0074d36b68d8972dd7",
+        "size": 9835,
+        "minCore": "1.0.6"
+      }
+    },
+    {
+      "id": "pass",
+      "name": "Monthly pass",
+      "kind": "bundled",
+      "category": "Rewards",
+      "summary": "Claim monthly pass rewards from the free track, Pro track or both.",
+      "overview": "Monthly pass checks selected clicking accounts on an interval and claims eligible tiers for the configured track.",
+      "integration": "Uses the host account selector and a separate claiming switch. The Pass tab reports each account’s progress.",
+      "operation": "Scheduled claim",
+      "version": "1.3.0",
+      "minCore": "1.0.6",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.3.0",
+        "file": "pass-1.3.0.json",
+        "sha256": "3729a6d255d116b1e120639a05c8f438f061159d7662632ef166af6cdfa4bf91",
+        "size": 9679,
+        "minCore": "1.0.6"
+      }
+    },
+    {
+      "id": "rewards",
+      "name": "Rewards",
+      "kind": "bundled",
+      "category": "Rewards",
+      "summary": "Claim ready rewards for rank, clicks, vault progress and other milestones.",
+      "overview": "Rewards checks selected clicking accounts and claims redeemable reward-chain tiers. Its tab reports progress and recent results.",
+      "integration": "Uses the same routed request and per-account scheduling APIs as the farmer’s other claimers.",
+      "operation": "Scheduled claim",
+      "version": "1.3.0",
+      "minCore": "1.0.6",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.3.0",
+        "file": "rewards-1.3.0.json",
+        "sha256": "92f67308e2f6c1d7542b630bd41c27447ec0a6415d8598ab92b1bbcdb2c83a26",
+        "size": 8774,
+        "minCore": "1.0.6"
+      }
+    },
+    {
+      "id": "converter",
+      "name": "Converter",
+      "kind": "bundled",
+      "category": "Inventory",
+      "summary": "Turn inventory and capsules into tokens through configurable steps.",
+      "overview": "Converter can sell cases and eligible skins, buy and open capsules, and optionally use accumulated tokens for Dragon Lore upgrades. Individual stages have their own controls.",
+      "integration": "Uses cash and price limits, previews in Practice, and publishes which accounts are assigned to its upgrade step so Armory can skip them.",
+      "operation": "Scheduled conversion",
+      "version": "1.4.0",
+      "minCore": "1.0.6",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.4.0",
+        "file": "converter-1.4.0.json",
+        "sha256": "384dd2a2cd4a4aae05732a683dad444dcab17b85a21dfbdf3f54b8a6e2762b95",
+        "size": 46184,
+        "minCore": "1.0.6"
+      }
+    },
+    {
+      "id": "opener",
+      "name": "Opener",
+      "kind": "bundled",
+      "category": "Inventory",
+      "summary": "Preview and open cases, capsules or collections across selected accounts.",
+      "overview": "Opener can buy stock within a budget or use existing stock. It can handle drops, favourite rules and boosting effects. It tracks account XP and rank changes.",
+      "integration": "Uses account busy markers during turns. The inspected beta also supports a Discord webhook for favourited drops when configured by the user.",
+      "operation": "Manual operation",
+      "version": "1.8.0",
+      "minCore": "1.2.3",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.6.0",
+        "file": "opener-1.6.0.json",
+        "sha256": "dd7b486b568437d6a91bb3749be993e7d011a28eac5454caa8e00fbc29984ab1",
+        "size": 49469,
+        "minCore": "1.2.3"
+      }
+    },
+    {
+      "id": "trader",
+      "name": "Trader",
+      "kind": "bundled",
+      "category": "Inventory",
+      "summary": "Move items and tokens between accounts using one-off trades or saved routes.",
+      "overview": "Trader coordinates sender and receiver sockets. Both accounts must be in ZSB Hub and clicking. The plugin supports a practice mode and receipt checks.",
+      "integration": "Serializes work per sender and receiver, and uses handoff requests when Armory is using an account needed for a route.",
+      "operation": "Manual and scheduled trades",
+      "version": "1.6.0",
+      "minCore": "1.2.2",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.5.0",
+        "file": "trader-1.5.0.json",
+        "sha256": "7e62ac1d084f15852669810ad46fa3f13b2015be8a78d5240bbeecfeefbb3265",
+        "size": 64229,
+        "minCore": "1.2.2"
+      }
+    },
+    {
+      "id": "effects",
+      "name": "Effects",
+      "kind": "bundled",
+      "category": "Inventory",
+      "summary": "Buy, sell, activate and queue special effects on selected accounts.",
+      "overview": "Effects manages quantities and ammo reserves. A queue waits for the current effect in a family to finish, then activates the next configured effect.",
+      "integration": "Uses account-scoped inventory and effect state. This version was present in the inspected beta and absent from the signed catalog snapshot.",
+      "operation": "Manual actions and queue",
+      "version": "1.0.0",
+      "minCore": "1.2.5",
+      "defaultEnabled": false
+    },
+    {
+      "id": "proxies",
+      "name": "Proxy manager",
+      "kind": "bundled",
+      "category": "Infrastructure",
+      "summary": "Configure and test proxy or WireGuard routes for the farmer.",
+      "overview": "Proxy manager publishes routes to the core, checks reachability and lets the user pin accounts to a route.",
+      "integration": "Uses the host’s routing API and secret storage. WireGuard uses a local SOCKS bridge. Routes with a shared known exit IP share their capacity.",
+      "operation": "Network routing",
+      "version": "1.1.0",
+      "minCore": "1.0.6",
+      "defaultEnabled": false,
+      "publisher": {
+        "version": "1.1.0",
+        "file": "proxies-1.1.0.json",
+        "sha256": "104ffe5d58e861496ee74c61c7c25f7c2893fd517bd42048263507bcbfc8e48d",
+        "size": 38736,
+        "minCore": "1.0.6"
+      }
+    },
+    {
+      "id": "account-pulse",
+      "name": "Account Pulse",
+      "kind": "community",
+      "category": "Utilities",
+      "summary": "See which accounts are healthy, need attention or are stopped at a glance.",
+      "overview": "Account Pulse is a read-only dashboard for account health. It lists the accounts known to the farmer and can hide stopped accounts from the table.",
+      "integration": "Reads the cached account list and registers a settings toggle, tab, table and summary action. This plugin makes zero site requests.",
+      "operation": "Read-only dashboard",
+      "version": "1.0.0",
+      "minCore": "1.2.7",
+      "defaultEnabled": false,
+      "author": "Rowan Kavanagh",
+      "license": "MIT",
+      "source": "plugins/account-pulse/",
+      "download": "downloads/account-pulse-1.0.0.zip",
+      "sha256": "c42c7d91a6f91f145b38c24d82aff4a97bdef85aa1f48c79064437771360e81b"
+    }
+  ]
+}

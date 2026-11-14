@@ -1,0 +1,12 @@
+{
+  "name": "zsb-plugin-exchange",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs --check"
+  },
+  "devDependencies": {
+    "markdown-it": "15.0.3"
+  }
+}

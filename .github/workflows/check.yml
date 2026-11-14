@@ -1,0 +1,22 @@
+name: Check marketplace
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: node --check plugins/account-pulse/index.js
+      - run: |
+          unzip -t downloads/account-pulse-1.0.0.zip
+          unzip -p downloads/account-pulse-1.0.0.zip index.js | cmp plugins/account-pulse/index.js -
+          unzip -p downloads/account-pulse-1.0.0.zip plugin.json | cmp plugins/account-pulse/plugin.json -

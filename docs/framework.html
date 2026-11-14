@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Framework for ZSB Hub plugins.">
+  <meta name="color-scheme" content="dark">
+  <title>Framework · ZSB Plugin Exchange</title>
+  <link rel="stylesheet" href="../site/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="../index.html"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ZSB Plugin Exchange</a>
+      <nav aria-label="Main navigation">
+        <a href="../index.html">Marketplace</a>
+        <a href="install.html">Install</a>
+        <a href="framework.html" aria-current="page">Framework</a>
+        <a href="authoring.html">Build a plugin</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap docs">
+    <nav class="doc-nav" aria-label="Documentation"><a href="install.html">Installation</a><a href="framework.html" aria-current="page">Framework</a><a href="authoring.html">Authoring</a><a href="distribution.html">Distribution</a><a href="../CONTRIBUTING.html">Contributing</a></nav>
+    <article class="prose"><h1>Framework reference</h1>
+<p>The plugin host is part of the desktop farmer's Node process. The farmer owns account state, scheduled clicks, sessions and routes. Plugins extend it through a CommonJS module and a context object. The desktop and browser panels render blocks from that context and send actions back to the host.</p>
+<p>Observed in <a href="https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1">ZSB Hub 1.2.7-beta.1</a>. The code paths below refer to the installed application's <code>resources/app.asar</code>. The interfaces can change across app builds.</p>
+<h2>Discovery and lifecycle</h2>
+<pre><code class="language-text">Bundled plugins/ ─┐
+                  ├─ scan by manifest ID and version
+User plugins/ ────┘              │
+                                 ▼
+                  enabled → version and trust checks
+                                 │
+                                 ▼
+                       require(main) → start(ctx)
+                                 │
+                 engine events / timers / panel actions
+                                 │
+                                 ▼
+                      stop() → host cleanup
+</code></pre>
+<ul>
+<li><strong>Boot.</strong> <code>src/core/index.js</code> creates the store, clicking engine, host and catalog. It scans and starts enabled plugins before resuming the farmer. Account-aware startup code must handle zero running accounts.</li>
+<li><strong>Discovery.</strong> <code>src/plugins/host.js</code> reads each immediate plugin folder. Bundled plugins live in the app archive, and downloaded or imported plugins live in the app's user-data <code>plugins/</code> directory. A strictly newer user copy wins over a bundled copy with the same ID. The comparator uses the first three numeric components and ignores the prerelease suffix. Bump a numeric component to replace a bundled version.</li>
+<li><strong>Start.</strong> The host checks <code>minCore</code> and verification, clears the plugin's CommonJS cache, and calls <code>start(ctx)</code>. It observes a returned promise for errors and marks the plugin running without waiting for async startup.</li>
+<li><strong>Stop.</strong> The host calls optional <code>stop()</code> synchronously. It clears normal-stop resources such as registered listeners, timers, sockets, panel blocks, shared values, busy/want marks and routes owned by the plugin. Clean up your own resources in <code>stop()</code>. Check <code>ctx.stopping</code> between steps. A pending <code>ctx.sleep()</code> timer is cancelled on stop, leaving its promise pending, so keep essential cleanup out of code that waits for it to resolve.</li>
+<li><strong>Reload and failures.</strong> The host has a reload RPC. ZIP import and catalog updates rescan and start the replacement if enabled. Startup errors use <code>CC-PLUG-01</code>, callback errors <code>CC-PLUG-02</code>, compatibility <code>CC-PLUG-03</code> and trust <code>CC-PLUG-04</code>.</li>
+</ul>
+<p>On the inspected Linux installation, app user data is under <code>~/.config/ZSB Hub/</code>. A plugin's settings are stored under <code>settings.json → plugins → &lt;id&gt;</code>, JSON data under <code>plugin-data/&lt;id&gt;.json</code> and optional files under <code>plugin-data/&lt;id&gt;/</code>.</p>
+<h2>Manifest</h2>
+<p>A ZIP needs <code>id</code>, <code>version</code>, and an explicit <code>main</code> pointing to an included file. Use a unique ID of 1–40 lowercase letters, digits or hyphens. Use a three-part numeric version and set <code>minCore</code> to the app version required by your APIs. For projects using ZIP import from this beta, <code>1.2.7</code> satisfies the host's numeric comparator on <code>1.2.7-beta.1</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code>, <code>description</code></td>
+<td>Displayed in the Plugins tab.</td>
+</tr>
+<tr>
+<td><code>defaultEnabled</code></td>
+<td>Fallback when the user has no saved enabled preference.</td>
+</tr>
+<tr>
+<td><code>tab</code>, <code>group</code></td>
+<td><code>tab</code> should exactly match the primary registered tab title. <code>group</code> places tabs in a navigation group such as <code>farming</code> or <code>trading</code>.</td>
+</tr>
+<tr>
+<td><code>settings</code></td>
+<td>Map from setting keys to field specs.</td>
+</tr>
+<tr>
+<td><code>power: true</code></td>
+<td>Adds <code>on</code> and <code>runMode</code>, initially off and Practice. Switching to Practice turns off <code>on</code>. Mutating logic must explicitly check <code>ctx.power.live()</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Settings can declare <code>label</code>, <code>help</code>, <code>when</code> (a Boolean setting key), <code>hidden</code> and <code>default</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Value and behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>boolean</code>, <code>text</code>, <code>textarea</code></td>
+<td>Boolean or string.</td>
+</tr>
+<tr>
+<td><code>number</code></td>
+<td>Finite number, clamped to <code>min</code> / <code>max</code> when supplied.</td>
+</tr>
+<tr>
+<td><code>choice</code></td>
+<td>String from <code>options: [{value, label}]</code>. A dynamic choice can populate options at runtime.</td>
+</tr>
+<tr>
+<td><code>account</code></td>
+<td>Known account ID or an empty string.</td>
+</tr>
+<tr>
+<td><code>accounts</code></td>
+<td><code>{all: false, ids: []}</code> initially. All includes accounts added later.</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>String array, up to 20 chips of up to 60 characters. Deduplicated without regard to case.</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td>Up to 50 rows configured by <code>fields</code>. <code>heading</code> can label a section inside a row.</td>
+</tr>
+</tbody>
+</table>
+<h2>Context API</h2>
+<table>
+<thead>
+<tr>
+<th>Context</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ctx.id</code>, <code>ctx.coreVersion</code>, <code>ctx.log(message, level?, accountId?)</code></td>
+<td>Identity, compatibility and logging.</td>
+</tr>
+<tr>
+<td><code>ctx.accounts.list()</code>, <code>.get(id)</code>, <code>.stats(id)</code>, <code>.main()</code></td>
+<td>Account summaries have <code>id</code>, <code>name</code>, <code>type</code>, <code>running</code> and <code>healthy</code>. Stats are the engine's cached summary. The context's account summary omits session tokens.</td>
+</tr>
+<tr>
+<td><code>ctx.on(event, fn)</code></td>
+<td>Engine events include <code>started(id)</code>, <code>stopped(id)</code>, <code>click(id, count)</code>, <code>report(id, me)</code>, <code>refused(id)</code>, <code>loggedOut(id)</code> and <code>change()</code>. Avoid persisting raw report payloads.</td>
+</tr>
+<tr>
+<td><code>ctx.every(ms, fn)</code>, <code>ctx.everyAccount(ms, fn)</code></td>
+<td>Host-owned timers. Minimum intervals are 1 second and 5 seconds respectively. Account work is staggered and runs on healthy accounts. Callbacks can overlap as the host does not await them.</td>
+</tr>
+<tr>
+<td><code>ctx.request(id, path, options?)</code></td>
+<td>Routed authenticated HTTP request, gated on account health. Options include <code>method</code>, <code>body</code>, <code>tries</code>, <code>retryOn</code>, <code>timeoutMs</code>, <code>okStatus</code>. Check result <code>kind</code> and <code>status</code>. Read <code>json</code> where present.</td>
+</tr>
+<tr>
+<td><code>ctx.socket(id)</code></td>
+<td>Opens an authenticated routed socket when supported. The handle offers <code>emit(event, data)</code>, <code>wait(events, ms)</code> and <code>close()</code>.</td>
+</tr>
+<tr>
+<td><code>ctx.settings.get(key)</code>, <code>.all()</code>, <code>.set(key, value)</code>, <code>.runsOn(key, id)</code></td>
+<td>Read, validate, write and apply account-scoped settings.</td>
+</tr>
+<tr>
+<td><code>ctx.settings.onChange(fn)</code>, <code>.setOptions(key, options)</code></td>
+<td>React to writes and publish dynamic choices. List fields use <code>listKey.fieldKey</code> for display options.</td>
+</tr>
+<tr>
+<td><code>ctx.power.live()</code>, <code>.practice()</code></td>
+<td>Live requires mode Live plus On. Practice mode is any mode other than Live.</td>
+</tr>
+<tr>
+<td><code>ctx.data.get()</code>, <code>.set(object)</code>, <code>ctx.dir</code></td>
+<td>JSON state with a temporary-write-and-rename path, plus a private data folder for larger files.</td>
+</tr>
+<tr>
+<td><code>ctx.secrets.seal(text)</code>, <code>.unseal(value)</code></td>
+<td>Platform-backed sealing. Unseal can return null if the secret cannot be recovered here.</td>
+</tr>
+<tr>
+<td><code>ctx.network.setRoutes(routes)</code>, <code>.probe(id)</code>, <code>.pin(accountId, routeId)</code>, <code>.state()</code></td>
+<td>Manage farmer routes. Setting routes replaces the shared route list. Pinning a clicking account can restart its run.</td>
+</tr>
+<tr>
+<td><code>ctx.errors.define(code, spec)</code>, <code>.raise(accountId, code, detail)</code>, <code>.clear(accountId, code)</code></td>
+<td>Report plugin-specific issues. Use a unique prefix for your codes.</td>
+</tr>
+<tr>
+<td><code>ctx.shared.set(key, value)</code>, <code>.get('plugin-id/key')</code></td>
+<td>Publishes JSON-cloned data under the caller's ID. Passing null deletes a key.</td>
+</tr>
+<tr>
+<td><code>ctx.accounts.setBusy(id, label)</code>, <code>.busy(id, options?)</code>, <code>.want(id, label)</code>, <code>.wanted(id)</code></td>
+<td>Cooperative markers for work in progress and handoff requests. Pass null to clear your own marker.</td>
+</tr>
+<tr>
+<td><code>ctx.stopping</code>, <code>ctx.sleep(ms)</code></td>
+<td>Host stop flag and cancellable wait.</td>
+</tr>
+</tbody>
+</table>
+<p>The request and socket gate in this build allows three concurrent starts per route group with at least 100 ms between request starts. Accounts that stop while queued can return <code>{kind: 'not-running', status: 0}</code>. HTTP 401 feeds the farmer's session-recovery path. Check for rate, maintenance and transport outcomes. For writes, verify fresh state after ambiguous replies before deciding whether to retry.</p>
+<h2>Panel and themes</h2>
+<p>Register <code>ctx.panel.tab(title, render)</code> with a synchronous render function returning <code>{blocks: [...]}</code>. Common blocks include:</p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Key data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stats</code></td>
+<td><code>items: [{label, value}]</code></td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td><code>columns</code>, <code>rows</code>, optional <code>empty</code> and <code>wrap</code></td>
+</tr>
+<tr>
+<td><code>text</code>, <code>notice</code></td>
+<td><code>text</code>, with optional <code>level</code> on notices</td>
+</tr>
+<tr>
+<td><code>settings</code></td>
+<td><code>keys</code> from your manifest</td>
+</tr>
+<tr>
+<td><code>buttons</code></td>
+<td><code>items: [{label, action, arg?, primary?, danger?, confirm?}]</code></td>
+</tr>
+<tr>
+<td><code>section</code>, <code>card</code></td>
+<td><code>title</code>, nested <code>blocks</code>, and optional card controls</td>
+</tr>
+<tr>
+<td><code>hero</code>, <code>flow</code>, <code>tip</code>, <code>checklist</code>, <code>list</code>, <code>picker</code>, <code>shop</code>, <code>skillmap</code></td>
+<td>More specialized layout and interaction blocks in <code>panel/panel.js</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Register button handlers with <code>ctx.panel.action(name, fn)</code>. A handler can return an object with <code>message</code> for a toast, and <code>ok: false</code> plus <code>error</code> for a rejection. Ordinary button arguments arrive as strings when supplied. Action handlers should validate incoming arguments. <code>ctx.panel.badge(fn)</code> can add a short text annotation to an account card.</p>
+<p>Theme plugins register <code>ctx.panel.theme({vars, css})</code>, then users select one in <strong>Settings → Theme</strong>. Allowed variable names include <code>bg</code>, <code>surface</code>, <code>line</code>, <code>text</code>, <code>muted</code>, <code>ok</code>, <code>warn</code>, <code>bad</code> and <code>radius</code>. <code>ctx.panel.asset(file)</code> returns an embedded image URL. The theme checker restricts CSS imports, external URLs and unregistered image URLs. Passing null clears the plugin's theme.</p>
+<h2>How the bundled plugins coordinate</h2>
+<ul>
+<li><strong>Armory → Games.</strong> Armory publishes <code>armory/farm</code>, containing selected account IDs and enabled games, and <code>armory/seating</code>, which lists accounts currently seating into battles. Games waits on seating and advertises <code>games/live</code>. Armory can run its own games when Games is idle.</li>
+<li><strong>Converter → Armory.</strong> Converter publishes <code>converter/dlore</code> for accounts assigned its Dragon Lore upgrade work. Armory uses the list when deciding which accounts can do upgrades.</li>
+<li><strong>Trader → Armory.</strong> A waiting trade route posts a <code>want</code> marker. Armory checks <code>wanted</code> and yields accounts after their in-flight work finishes. Opener and other long-running plugins also use busy markers to avoid collisions.</li>
+<li><strong>Proxy manager → Farmer.</strong> It supplies the shared route list and can probe and pin accounts. The core groups proxy routes with the same known exit IP for capacity and pacing decisions.</li>
+</ul>
+<p><a href="../catalog.json">All bundled plugins</a> · <a href="distribution.html">Publisher feed and signatures</a></p>
+</article>
+  </main>
+  <footer>
+    <div><strong>ZSB Plugin Exchange</strong><span>Independent community project for ZSB Hub.</span></div>
+    <a href="../CONTRIBUTING.html">Contribute</a>
+    <a href="../catalog.json">Catalog JSON</a>
+    <a href="https://github.com/GothGirlZSB/zsb-hub-releases">Publisher releases ↗</a>
+  </footer>
+</body>
+</html>

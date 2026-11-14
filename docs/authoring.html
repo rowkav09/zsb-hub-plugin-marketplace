@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Authoring for ZSB Hub plugins.">
+  <meta name="color-scheme" content="dark">
+  <title>Authoring · ZSB Plugin Exchange</title>
+  <link rel="stylesheet" href="../site/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="../index.html"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ZSB Plugin Exchange</a>
+      <nav aria-label="Main navigation">
+        <a href="../index.html">Marketplace</a>
+        <a href="install.html">Install</a>
+        <a href="framework.html">Framework</a>
+        <a href="authoring.html" aria-current="page">Build a plugin</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap docs">
+    <nav class="doc-nav" aria-label="Documentation"><a href="install.html">Installation</a><a href="framework.html">Framework</a><a href="authoring.html" aria-current="page">Authoring</a><a href="distribution.html">Distribution</a><a href="../CONTRIBUTING.html">Contributing</a></nav>
+    <article class="prose"><h1>Build a plugin</h1>
+<p><a href="../catalog/account-pulse-source.html">Account Pulse</a> is a working read-only dashboard. It uses locally cached account status and demonstrates how a manifest setting, a panel tab and an action fit together.</p>
+<h2>Start with two files</h2>
+<p>Create a new folder and add <code>plugin.json</code>:</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;hello-farmer&quot;,
+  &quot;name&quot;: &quot;Hello Farmer&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;minCore&quot;: &quot;1.2.7&quot;,
+  &quot;main&quot;: &quot;index.js&quot;,
+  &quot;tab&quot;: &quot;Hello Farmer&quot;,
+  &quot;defaultEnabled&quot;: false
+}
+</code></pre>
+<p>Add <code>index.js</code>:</p>
+<pre><code class="language-js">module.exports = {
+  start(ctx) {
+    ctx.panel.tab('Hello Farmer', () =&gt; ({
+      blocks: [{
+        type: 'text',
+        text: `${ctx.accounts.list().length} accounts in the farmer`,
+      }],
+    }));
+  },
+};
+</code></pre>
+<p>Choose a unique ID for distribution. Keep the entry point CommonJS and ship any runtime modules your code needs inside the plugin. The importer copies files from the ZIP.</p>
+<h2>Package and try it</h2>
+<p>From the repository root, use Python 3.10 or newer:</p>
+<pre><code class="language-sh">python3 scripts/pack.py path/to/hello-farmer -o /tmp/hello-farmer-1.0.0.zip
+</code></pre>
+<p>Use <a href="install.html">the ZIP installation steps</a>. Open the registered tab and try toggling the plugin off and on. Increment the version before handing out an update.</p>
+<h2>Work with accounts</h2>
+<ol>
+<li>Add a setting of type <code>accounts</code> for actions that operate on selected accounts. Use <code>ctx.settings.runsOn(key, account.id)</code> to apply it.</li>
+<li>Use <code>ctx.accounts.list()</code> for cached state and <code>ctx.request()</code> for needed site calls. Use <code>ctx.everyAccount()</code> for scheduled per-account work. Track in-flight work per account if dispatches can overlap.</li>
+<li>Give users a preview, use <code>power: true</code> for automatic writes and check <code>ctx.power.live()</code> before live work. Check <code>ctx.stopping</code> between steps, handle rate limits and use busy markers cooperatively. Release markers in <code>finally</code> around the actual work.</li>
+<li>Persist the minimum state needed with <code>ctx.data.set()</code> and handle missing fields from older versions. Keep secrets out of logs and distribution files.</li>
+</ol>
+<p>Keep render functions synchronous and cheap. Use panel actions for work that should happen only after a user click. <a href="framework.html">Context API and panel blocks</a></p>
+</article>
+  </main>
+  <footer>
+    <div><strong>ZSB Plugin Exchange</strong><span>Independent community project for ZSB Hub.</span></div>
+    <a href="../CONTRIBUTING.html">Contribute</a>
+    <a href="../catalog.json">Catalog JSON</a>
+    <a href="https://github.com/GothGirlZSB/zsb-hub-releases">Publisher releases ↗</a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Installation for ZSB Hub plugins.">
+  <meta name="color-scheme" content="dark">
+  <title>Installation · ZSB Plugin Exchange</title>
+  <link rel="stylesheet" href="../site/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="../index.html"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ZSB Plugin Exchange</a>
+      <nav aria-label="Main navigation">
+        <a href="../index.html">Marketplace</a>
+        <a href="install.html" aria-current="page">Install</a>
+        <a href="framework.html">Framework</a>
+        <a href="authoring.html">Build a plugin</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap docs">
+    <nav class="doc-nav" aria-label="Documentation"><a href="install.html" aria-current="page">Installation</a><a href="framework.html">Framework</a><a href="authoring.html">Authoring</a><a href="distribution.html">Distribution</a><a href="../CONTRIBUTING.html">Contributing</a></nav>
+    <article class="prose"><h1>Install plugins</h1>
+<p>Use the <strong>Plugins</strong> tab in ZSB Hub. The steps here were checked against <a href="https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1">ZSB Hub 1.2.7-beta.1</a>, the build that introduced ZIP import.</p>
+<h2>Publisher plugins</h2>
+<ol>
+<li>Open <strong>Plugins</strong> and find the plugin by name.</li>
+<li>Use <strong>Install</strong> if the signed release catalog offers it, or <strong>Update</strong> when a newer compatible release is offered.</li>
+<li>Select <strong>Turn on</strong>. The app opens the plugin tab automatically when it has one. To return later, select <strong>Open</strong> on the plugin’s entry. Choose accounts where applicable. Some plugins also have a separate Live or On control.</li>
+</ol>
+<p>Bundled plugins are available as soon as you have the app build that ships them. Effects ships in the inspected beta. The publisher catalog has its own version history. In the catalog snapshot used here, the beta bundles newer copies of Armory, Opener and Trader.</p>
+<h2>Community ZIPs</h2>
+<ol>
+<li>Download <a href="../downloads/account-pulse-1.0.0.zip">Account Pulse</a> or another community package. Review the source and the author's provenance before you enable a package.</li>
+<li>In <strong>Plugins → Custom plugins</strong>, select <strong>Import .zip</strong>. Choose the individual plugin ZIP. Leave it compressed.</li>
+<li>For an unsigned package you trust, enable <strong>Settings → Allow unverified plugins</strong>. This is an app-wide setting. Plugins run as Node code with the desktop user's permissions.</li>
+<li>Return to <strong>Plugins</strong> and select <strong>Turn on</strong>. The app opens Account Pulse, which also works with an empty account list.</li>
+</ol>
+<p>To update a community plugin, import its next version with the same ID. The app stores settings and state by ID. To uninstall it, use <strong>Plugins → Remove</strong>. Its saved settings and data can still be present after removal.</p>
+<h2>Common errors</h2>
+<table>
+<thead>
+<tr>
+<th>Message or symptom</th>
+<th>What to check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Import .zip is missing</td>
+<td>Check the app version. This guide covers the 1.2.7 beta import workflow.</td>
+</tr>
+<tr>
+<td><code>CC-PLUG-03</code> or app version required</td>
+<td>Check <code>minCore</code> against your app version.</td>
+</tr>
+<tr>
+<td><code>CC-PLUG-04</code> or unverified</td>
+<td>The ZIP carries no valid publisher signature. The app-wide setting controls whether it can start.</td>
+</tr>
+<tr>
+<td>Official name already taken</td>
+<td>Use a new ID for a community fork. The ZIP importer reserves bundled and listed IDs for publisher-signed content.</td>
+</tr>
+<tr>
+<td>Missing manifest or entry file</td>
+<td>Put <code>plugin.json</code> at the ZIP root or in a single wrapping folder. The archive must contain the file named in <code>main</code>.</td>
+</tr>
+<tr>
+<td><code>CC-PLUG-01</code> or <code>CC-PLUG-02</code></td>
+<td>Read the Hub log for the load or callback error.</td>
+</tr>
+<tr>
+<td>Plugin runs but does no account work</td>
+<td>Check that the account is clicking normally, is included by the plugin's account selector, and is eligible for the operation. Check Live/On and any account conflicts.</td>
+</tr>
+</tbody>
+</table>
+<p><a href="authoring.html">Build a plugin</a> · <a href="framework.html">Framework reference</a></p>
+</article>
+  </main>
+  <footer>
+    <div><strong>ZSB Plugin Exchange</strong><span>Independent community project for ZSB Hub.</span></div>
+    <a href="../CONTRIBUTING.html">Contribute</a>
+    <a href="../catalog.json">Catalog JSON</a>
+    <a href="https://github.com/GothGirlZSB/zsb-hub-releases">Publisher releases ↗</a>
+  </footer>
+</body>
+</html>
