@@ -8,13 +8,19 @@ const root = new URL('../', import.meta.url);
 const read = async path => readFile(new URL(path, root), 'utf8');
 const catalog = JSON.parse(await read('catalog.json'));
 const check = process.argv.includes('--check');
+const submitUrl = 'https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml';
+const isHttps = value => {
+  if (typeof value !== 'string' || !value.startsWith('https://')) return false;
+  const url = URL.parse(value);
+  return !!url && !!url.hostname && !url.username && !url.password;
+};
 const docs = {
   'docs/install.md': 'Installation',
   'docs/framework.md': 'Framework',
   'docs/authoring.md': 'Authoring',
   'docs/distribution.md': 'Distribution',
   'CONTRIBUTING.md': 'Contributing',
-  ...Object.fromEntries(catalog.plugins.filter(p => p.kind === 'community')
+  ...Object.fromEntries(catalog.plugins.filter(p => p.kind === 'community' && !isHttps(p.source))
     .map(p => [p.source + 'README.md', p.name])),
 };
 const icons = {
@@ -55,8 +61,18 @@ for (const p of catalog.plugins) {
     continue;
   }
   if (p.kind !== 'community') throw new Error(`Unknown plugin kind: ${p.kind}`);
-  if (p.source !== `plugins/${p.id}/` || p.download !== `downloads/${p.id}-${p.version}.zip`
-    || !p.author || !p.license) throw new Error(`Invalid community listing: ${p.id}`);
+  if (!p.author || !p.license || !/^[a-f0-9]{64}$/.test(p.sha256)) {
+    throw new Error(`Community listing requires an author, license and SHA-256: ${p.id}`);
+  }
+  if (isHttps(p.source) && isHttps(p.download)) {
+    if (!new URL(p.download).pathname.toLowerCase().endsWith('.zip')) {
+      throw new Error(`The external download must point to a ZIP: ${p.id}`);
+    }
+    continue;
+  }
+  if (p.source !== `plugins/${p.id}/` || p.download !== `downloads/${p.id}-${p.version}.zip`) {
+    throw new Error(`Use matching repository paths or HTTPS source and ZIP links: ${p.id}`);
+  }
 
   const [manifestText, zip] = await Promise.all([
     read(p.source + 'plugin.json'),
@@ -93,7 +109,7 @@ function shell(title, description, page, content, script = '') {
   <a class="skip" href="#main">Skip to content</a>
   <header class="header">
     <div class="header-inner">
-      <a class="brand" href="${link('index.html')}"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ZSB Plugin Exchange</a>
+      <a class="brand" href="${link('index.html')}"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ZSB Hub Plugin Marketplace</a>
       <nav aria-label="Main navigation">
         ${nav.map(([path, name]) => `<a href="${link(path)}"${path === page ? ' aria-current="page"' : ''}>${name}</a>`).join('\n        ')}
       </nav>
@@ -101,7 +117,8 @@ function shell(title, description, page, content, script = '') {
   </header>
 ${content}
   <footer>
-    <div><strong>ZSB Plugin Exchange</strong><span>Independent community project for ZSB Hub.</span></div>
+    <div><strong>ZSB Hub Plugin Marketplace</strong><span>Independent community project for ZSB Hub.</span></div>
+    <a href="${submitUrl}">Submit a plugin ↗</a>
     <a href="${link('CONTRIBUTING.html')}">Contribute</a>
     <a href="${link('catalog.json')}">Catalog JSON</a>
     <a href="${esc(catalog.publisherFeed.source)}">Publisher releases ↗</a>
@@ -160,13 +177,14 @@ const home = `  <main id="main" class="wrap">
     </section>
     <aside class="build-panel"><div><h2>Build for ZSB Hub</h2><p>Write a manifest, register a panel and package your first plugin.</p></div><a class="button secondary" href="docs/authoring.html">Start building <span aria-hidden="true">↗</span></a></aside>
   </main>`;
-await output('index.html', shell('ZSB Plugin Exchange', 'Browse plugins for the ZSB Hub farmer and learn to build your own.', 'index.html', home, '<script src="site/market.js" defer></script>'));
+await output('index.html', shell('ZSB Hub Plugin Marketplace', 'Browse plugins for the ZSB Hub farmer and learn to build your own.', 'index.html', home, '<script src="site/market.js" defer></script>'));
 
 for (const p of catalog.plugins) {
   const page = `catalog/${p.id}.html`;
   const community = p.kind === 'community';
+  const external = isHttps(p.source);
   const packageLink = community
-    ? `<a class="button primary" href="../${esc(p.download)}" download>Download ZIP ↓</a><a class="button secondary" href="../${esc(docPage(p.source + 'README.md'))}">Source &amp; documentation ↗</a>`
+    ? `<a class="button primary" href="${esc(external ? p.download : '../' + p.download)}"${external ? '' : ' download'}>Download ZIP ↓</a><a class="button secondary" href="${esc(external ? p.source : '../' + docPage(p.source + 'README.md'))}">Source &amp; documentation ↗</a>`
     : '<a class="button primary" href="../docs/install.html">Installation instructions ↗</a>';
   const provenance = p.publisher
     ? `<h2>Publisher catalog</h2><p>The signed catalog lists version ${esc(p.publisher.version)}, which requires core ${esc(p.publisher.minCore)}. Install or update publisher plugins from the app’s Plugins tab.</p>
@@ -184,7 +202,7 @@ for (const p of catalog.plugins) {
       <div class="prose"><h2>What it does</h2><p>${esc(p.overview)}</p><h2>How it uses the farmer</h2><p>${esc(p.integration)}</p>${provenance}</div>
     </article>
   </main>`;
-  await output(page, shell(`${p.name} · ZSB Plugin Exchange`, p.summary, page, detail));
+  await output(page, shell(`${p.name} · ZSB Hub Plugin Marketplace`, p.summary, page, detail));
 }
 
 const md = new MarkdownIt({ html: false });
@@ -210,6 +228,6 @@ for (const [source, name] of Object.entries(docs)) {
     <nav class="doc-nav" aria-label="Documentation">${sidebar}</nav>
     <article class="prose">${md.renderer.render(tokens, md.options, env)}</article>
   </main>`;
-  await output(page, shell(`${name} · ZSB Plugin Exchange`, `${name} for ZSB Hub plugins.`, page, content));
+  await output(page, shell(`${name} · ZSB Hub Plugin Marketplace`, `${name} for ZSB Hub plugins.`, page, content));
 }
 console.log(`${check ? 'Checked' : 'Built'} ${catalog.plugins.length} listings and ${Object.keys(docs).length} documentation pages.`);

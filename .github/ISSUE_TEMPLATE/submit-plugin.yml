@@ -1,0 +1,46 @@
+name: Submit a plugin
+description: List your ZSB Hub plugin in the community marketplace.
+title: "[Plugin] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submit an existing plugin or a new release here. Paste a public source URL and a versioned ZIP download URL. Leave out account data, credentials and settings exports.
+  - type: input
+    id: source
+    attributes:
+      label: Source and license
+      description: Link to the public source at the submitted version. Include the license if the linked page does not show it.
+      placeholder: https://github.com/you/your-plugin/tree/v1.0.0
+    validations:
+      required: true
+  - type: input
+    id: download
+    attributes:
+      label: ZIP download
+      description: Link directly to the versioned ZIP asset you imported in ZSB Hub.
+      placeholder: https://github.com/you/your-plugin/releases/download/v1.0.0/your-plugin-1.0.0.zip
+    validations:
+      required: true
+  - type: input
+    id: compatibility
+    attributes:
+      label: Plugin ID and compatibility
+      description: Copy the ID, version and minimum core from plugin.json. Include the ZSB Hub build you used to test.
+      placeholder: example-plugin 1.0.0, minCore 1.2.7, tested on 1.2.7-beta.1 Linux
+    validations:
+      required: true
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: What does it do?
+      description: Describe the user-facing feature, which accounts it applies to, and what it reads or changes. Mention any external services.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How was it tested?
+      description: Describe the import and a representative action you exercised. Include the ZIP SHA-256 if you have it.
+    validations:
+      required: true

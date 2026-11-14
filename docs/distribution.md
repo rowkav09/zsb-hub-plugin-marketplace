@@ -24,4 +24,4 @@ The host loads CommonJS with ordinary Node `require()`. Plugins therefore run wi
 
 Framework behavior was inspected in the installed Linux beta at `resources/app.asar`, primarily `src/plugins/{host,catalog,zipimport,theme}.js`, `src/core/{index,engine,site}.js`, `panel/panel.js` and the bundled `plugins/` folders.
 
-The publisher repository supplies the official packages. The Exchange contains original documentation, site code and Account Pulse. Publisher plugin code is linked through the official catalog. [Publisher releases](https://github.com/GothGirlZSB/zsb-hub-releases)
+The publisher repository supplies the official packages. The marketplace contains original documentation, site code and Account Pulse. Publisher plugin code is linked through the official catalog. [Publisher releases](https://github.com/GothGirlZSB/zsb-hub-releases)

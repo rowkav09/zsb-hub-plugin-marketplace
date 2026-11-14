@@ -1,15 +1,25 @@
 # Contribute a plugin
 
-Open a pull request against the repository's `main` branch with a catalog entry. New entries should use a unique ID, identify the author and license, state the minimum supported core, and describe what the plugin reads or changes. Include a versioned ZIP and its SHA-256 along with inspectable source.
+[Submit a plugin](https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml) to send a listing from your browser. Keep your source and releases wherever you maintain the plugin.
 
-For plugins maintained in this repository:
+1. Tag the source and publish one versioned ZIP containing a single plugin.
+2. Import the ZIP into ZSB Hub and exercise a representative action. Use test accounts for features that can change account state.
+3. Send the source and release links, license, plugin ID, version and Hub build through the form. Describe account changes and external services so reviewers can describe the plugin accurately.
 
-1. Add a directory under `plugins/<id>/` containing the manifest, entry point and documentation.
-2. Run `python3 scripts/pack.py plugins/<id> -o downloads/<id>-<version>.zip`. Use `-a LICENSE` to add the repository license if your plugin uses it and the directory lacks its own copy.
-3. Add a `community` entry to `catalog.json`. Use Account Pulse as an example. Copy the SHA-256 printed by the pack command, and state that an unsigned build requires **Allow unverified plugins**.
-4. Run `npm ci`, `npm run build`, and `npm run check`. Include the generated pages with the catalog change.
-5. Include how you tested installation, the ZSB Hub build, and any account operations exercised.
+For an update, use the same ID and link the new source tag and ZIP. A maintainer can review the package and add or update the listing from the submission. A submitted listing does not install anything into the Hub.
 
-Ship only files needed by the plugin and its license. Use fixtures with invented account data when testing.
+## Send a catalog pull request
 
-[Author guide](docs/authoring.md) · [Package and signature formats](docs/distribution.md)
+A listing for an externally maintained plugin can reference HTTPS source and release URLs. Use `kind: "community"`, an author, license, category, version and minimum core. Set `source` to the versioned source URL and `download` to the versioned direct ZIP URL. Record the ZIP's SHA-256 and describe how to reproduce the test in the PR.
+
+For a plugin maintained in this repository, add `plugins/<id>/` with `plugin.json`, its entry point and `README.md`. Package the directory as shown below. Use `-a LICENSE` when including the repository license in a package that lacks its own copy.
+
+```sh
+python3 scripts/pack.py plugins/<id> -o downloads/<id>-<version>.zip
+```
+
+Use the Account Pulse entry in [catalog.json](catalog.json) as the example for local `source` and `download` paths. Copy the SHA-256 printed by the packer to your entry.
+
+Run `npm ci`, `npm run build` and `npm run check`. Include the generated pages with the catalog change. Leave account exports, logs and credentials out of the package.
+
+[Authoring guide](docs/authoring.md) · [Package and signing formats](docs/distribution.md) · [Agent skill](SKILL.md)
