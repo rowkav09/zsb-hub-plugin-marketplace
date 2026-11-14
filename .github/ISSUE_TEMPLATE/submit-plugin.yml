@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Submit an existing plugin or a new release here. Paste a public source URL and a versioned ZIP download URL. Leave out account data, credentials and settings exports.
+        Submit an existing plugin or a new release here. Paste a public source URL and a versioned GitHub Release ZIP download URL. Leave out account data, credentials and settings exports.
   - type: input
     id: source
     attributes:

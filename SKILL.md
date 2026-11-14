@@ -25,4 +25,4 @@ The framework reference comes from the installed Linux build `1.2.7-beta.1`. Con
 
 ## Validate a change
 
-Use [scripts/pack.py](scripts/pack.py) for a locally maintained plugin. Compare the built ZIP and recorded SHA-256 with the catalog entry. After editing listings or documentation, run `npm ci`, `npm run build` and `npm run check` from the repository root. Report the Hub build and paths actually exercised.
+Use [scripts/pack.py](scripts/pack.py) for a locally maintained plugin. Compare the built ZIP and recorded SHA-256 with the catalog entry. The [External Marketplace plugin](plugins/zsb-marketplace/) uses the desktop panel bridge to call the Hub’s stock importer. After editing plugins or listings, run `npm ci`, `npm run check`, `npm run check:packages` and `npm test` from the repository root. Report the Hub build and paths actually exercised.

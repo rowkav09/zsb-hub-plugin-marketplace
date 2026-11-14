@@ -1,0 +1,132 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
+const { readFileSync } = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const { startMarketplace } = require('../plugins/zsb-marketplace/index.js');
+const { readCatalog, fetchPackage, CATALOG_URL } = require('../plugins/zsb-marketplace/catalog.js');
+const catalog = require('../catalog.json');
+
+const pulse = catalog.plugins.find(plugin => plugin.id === 'account-pulse');
+const zip = readFileSync(path.join(__dirname, '..', pulse.download));
+const version = '1.2.7-beta.1';
+
+function makeFixture(t, options = {}) {
+  const actions = new Map();
+  let render;
+  let importCount = 0;
+  let installed = options.installed || [];
+  const hub = {
+    state: async () => ({ installed, allowUnverified: options.allowUnverified ?? true }),
+    inspectZip: () => options.manifest || require('../plugins/account-pulse/plugin.json'),
+    async importZip(data) {
+      assert.deepEqual(data, zip);
+      importCount++;
+      installed = [{ id: pulse.id, version: pulse.version, bundled: false }];
+      return { ok: true, started: true };
+    },
+  };
+  const fetcher = async url => url === CATALOG_URL
+    ? Response.json(catalog)
+    : new Response(options.zip || zip);
+  const cleanup = startMarketplace({
+    id: 'zsb-marketplace',
+    coreVersion: options.version || version,
+    panel: {
+      action: (name, fn) => actions.set(name, fn),
+      tab(title, fn) {
+        assert.equal(title, 'External Marketplace');
+        render = fn;
+      },
+    },
+  }, hub, options.fetcher || fetcher);
+  t.after(cleanup);
+  return { action: (name, ...args) => actions.get(name)(...args), render: () => render(), imports: () => importCount, cleanup };
+}
+
+test('lists GitHub ZIPs, imports the selected package once, and updates the listing', async t => {
+  const fixture = makeFixture(t);
+  await fixture.action('refresh');
+  const picker = fixture.render().blocks.find(block => block.type === 'picker');
+  assert.deepEqual(picker.items.map(item => item.id), ['account-pulse']);
+  assert.match(JSON.stringify(fixture.render()), /Install Account Pulse/);
+  await fixture.action('select', 'not-in-catalog');
+  const result = await fixture.action('install', pulse.id);
+  assert.match(result.message, /Account Pulse 1.0.0 imported/);
+  assert.equal(fixture.imports(), 1);
+  assert.match(JSON.stringify(fixture.render()), /1.0.0 · Installed/);
+  assert.equal((await fixture.action('install', pulse.id)).ok, false);
+  assert.equal(fixture.imports(), 1);
+});
+
+test('updates an older community install and preserves newer or bundled copies', async t => {
+  const older = makeFixture(t, { installed: [{ id: pulse.id, version: '0.9.0' }] });
+  await older.action('refresh');
+  assert.match(JSON.stringify(older.render()), /Update Account Pulse/);
+  await older.action('install', pulse.id);
+  assert.equal(older.imports(), 1);
+  for (const local of [{ version: '1.1.0' }, { version: '1.0.0', bundled: true }]) {
+    const fixture = makeFixture(t, { installed: [{ id: pulse.id, ...local }] });
+    await fixture.action('refresh');
+    assert.equal((await fixture.action('install', pulse.id)).ok, false);
+    assert.equal(fixture.imports(), 0);
+  }
+});
+
+test('refuses unsigned imports when disabled, wrong manifests, bad hashes and incompatible Hub versions', async t => {
+  for (const [options, problem] of [
+    [{ allowUnverified: false }, /Allow unverified plugins/],
+    [{ manifest: { id: 'different-plugin' } }, /disagrees.*id/],
+    [{ zip: Buffer.from('altered') }, /checksum/],
+    [{ version: '1.2.6' }, /cannot be installed/],
+  ]) {
+    const fixture = makeFixture(t, options);
+    await fixture.action('refresh');
+    assert.match((await fixture.action('install', pulse.id)).error, problem);
+    assert.equal(fixture.imports(), 0);
+  }
+});
+
+test('serializes imports and aborts a pending download when the plugin stops', async t => {
+  let downloading;
+  const started = new Promise(resolve => { downloading = resolve; });
+  const fixture = makeFixture(t, {
+    fetcher: async (url, { signal }) => {
+      if (url === CATALOG_URL) return Response.json(catalog);
+      return new Promise((_, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+        downloading();
+      });
+    },
+  });
+  await fixture.action('refresh');
+  const first = fixture.action('install', pulse.id);
+  await started;
+  assert.match((await fixture.action('install', pulse.id)).error, /current marketplace action/);
+  fixture.cleanup();
+  assert.equal((await first).ok, false);
+  assert.equal(fixture.imports(), 0);
+});
+
+test('rejects conflicting listings, auto-start packages and unsupported download URLs', () => {
+  assert.throws(() => readCatalog({ ...catalog, plugins: [pulse, pulse] }), /duplicate/);
+  assert.throws(() => readCatalog({ ...catalog, plugins: [{ ...pulse, defaultEnabled: true }] }), /defaultEnabled/);
+  assert.throws(() => readCatalog({ ...catalog, plugins: [{ ...pulse, download: 'https://example.com/plugin.zip' }] }), /versioned GitHub Release/);
+});
+
+test('allows GitHub release asset redirects and refuses redirects outside GitHub', async () => {
+  const release = 'https://github.com/example/example/releases/download/v1.0.0/package.zip';
+  const allowed = 'https://release-assets.githubusercontent.com/path';
+  const entry = { ...pulse, download: release, sha256: createHash('sha256').update(zip).digest('hex') };
+  const calls = [];
+  const good = async url => {
+    calls.push(url);
+    return url === release ? Response.redirect(allowed, 302) : new Response(zip);
+  };
+  assert.deepEqual(await fetchPackage(entry, good), zip);
+  assert.deepEqual(calls, [release, allowed]);
+  await assert.rejects(fetchPackage(entry, async () => Response.redirect('https://example.com/package.zip', 302)),
+    /Unexpected GitHub release download redirect/);
+});

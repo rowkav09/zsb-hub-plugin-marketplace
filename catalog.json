@@ -219,6 +219,24 @@
       "source": "plugins/account-pulse/",
       "download": "downloads/account-pulse-1.0.0.zip",
       "sha256": "c42c7d91a6f91f145b38c24d82aff4a97bdef85aa1f48c79064437771360e81b"
+    },
+    {
+      "id": "zsb-marketplace",
+      "name": "ZSB Hub External Plugin Marketplace",
+      "kind": "community",
+      "category": "Utilities",
+      "summary": "Browse and install external community plugins from this GitHub repository inside ZSB Hub.",
+      "overview": "The External Marketplace lists community ZIPs from GitHub and installs or updates them through the Hub’s ZIP importer.",
+      "integration": "Checks package hashes and manifests, then calls the desktop panel’s existing import bridge. Makes no game-site requests.",
+      "operation": "User-initiated plugin installation",
+      "version": "1.0.0",
+      "minCore": "1.2.7",
+      "defaultEnabled": false,
+      "author": "Rowan Kavanagh",
+      "license": "MIT",
+      "source": "plugins/zsb-marketplace/",
+      "download": "downloads/zsb-marketplace-1.0.0.zip",
+      "sha256": "693889a83b000d4a04afdb4334b66b7e05cfb849a0be4f314237ff36784ceb80"
     }
   ]
 }

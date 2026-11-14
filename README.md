@@ -13,13 +13,13 @@
                                 P L U G I N   H U B
 </pre>
 
-<h1>ZSB Hub Plugin Marketplace</h1>
+<h1>ZSB Hub External Plugin Marketplace</h1>
 
-<p>Discover plugins for the ZSB Hub farmer, learn the framework, and share your own extensions.</p>
+<p>Install community plugins from GitHub inside the ZSB Hub desktop app.</p>
 
 <p>
-  <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace#plugin-directory"><strong>Browse plugins</strong></a> ·
-  <a href="docs/install.md">Install</a> ·
+  <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace#bundled-plugin-directory"><strong>Browse plugins</strong></a> ·
+  <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip"><strong>Download the marketplace ZIP</strong></a> ·
   <a href="docs/framework.md">Framework</a> ·
   <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml"><strong>Submit a plugin</strong></a>
 </p>
@@ -29,17 +29,20 @@
 
 </div>
 
-## Quick start
+## Install the External Marketplace
 
-**Try a community plugin.** [Download Account Pulse](downloads/account-pulse-1.0.0.zip) to see which accounts are healthy, need attention or are stopped. It reads the farmer's cached status and makes zero site requests. [View source](plugins/account-pulse/)
+1. [Download the External Marketplace ZIP](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip). In ZSB Hub, open **Plugins → Custom plugins → Import .zip** and choose the ZIP.
+2. After reviewing the [source](plugins/zsb-marketplace/), enable **Settings → Allow unverified plugins**, then turn on **ZSB Hub External Plugin Marketplace** in Plugins.
+3. In the **External Marketplace** tab, select a plugin and choose **Install** or **Update**. Enable newly installed plugins from the normal **Plugins** list.
 
-1. In ZSB Hub, open **Plugins → Custom plugins → Import .zip** and choose the ZIP.
-2. Review the plugin source. Account Pulse is unsigned, so enable **Settings → Allow unverified plugins** to run it.
-3. Return to **Plugins** and select **Turn on**. The dashboard opens automatically.
+This is a community feed served from this GitHub repository. The Hub's official catalog remains available under **Plugins**. The desktop panel integration was tested with [ZSB Hub 1.2.7-beta.1](https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1) on Linux. [Installation and troubleshooting](docs/install.md)
 
-ZIP import was introduced in the inspected [ZSB Hub 1.2.7-beta.1 build](https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1). Use the Hub's **Plugins** tab to enable bundled plugins and install publisher-signed updates. [Installation and troubleshooting](docs/install.md)
+| Community plugin | What it does | ZIP |
+| --- | --- | --- |
+| [External Marketplace](plugins/zsb-marketplace/) | Lists, installs and updates community plugins from this repository. | [Download](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip) |
+| [Account Pulse](plugins/account-pulse/) | Displays healthy, paused and stopped accounts from the farmer's cache. | [Download](downloads/account-pulse-1.0.0.zip) |
 
-## Plugin directory
+## Bundled plugin directory
 
 Bundled versions were inspected in the Linux beta. The publisher's signed feed has its own versions. The [marketplace catalog](catalog.json) records runtime behavior, compatibility and provenance for each entry.
 
@@ -83,27 +86,16 @@ module.exports = {
 
 [Open the plugin submission form](https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml) with your **source**, a **versioned ZIP**, and the **ZSB Hub build you tested**. Tell us what it reads or changes. The form works without a clone or pull request. [Contribution guide](CONTRIBUTING.md)
 
-## Work on the marketplace
+## Verify the catalog and plugins
+
+Use Node.js 24 and Python 3.10+. CI validates the catalog, compares packaged ZIPs with their source, exercises the install flow with fixtures, and verifies the pinned publisher signatures.
 
 ```sh
-git clone https://github.com/rowkav09/zsb-hub-plugin-marketplace.git
-cd zsb-hub-plugin-marketplace
 npm ci
-npm run build
 npm run check
-python3 -m http.server 8000 --bind 127.0.0.1
-```
-
-Use Node.js 24 and Python 3.10+. Open [localhost:8000](http://127.0.0.1:8000) for the searchable marketplace and individual plugin pages. Edit `catalog.json` and the Markdown docs, then regenerate the checked-in HTML.
-
-CI checks generated pages, rebuilds every local ZIP, tests the sample plugin with fixtures, verifies publisher signatures and SHA-256, and runs the marketplace in desktop and mobile Chromium. Run the same checks locally:
-
-```sh
 npm run check:packages
 npm test
 npm run check:publisher
-npx playwright install chromium
-npm run test:browser
 ```
 
 ## License and attribution

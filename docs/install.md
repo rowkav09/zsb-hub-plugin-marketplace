@@ -2,6 +2,14 @@
 
 Use the **Plugins** tab in ZSB Hub. The steps here were checked against [ZSB Hub 1.2.7-beta.1](https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1), the build that introduced ZIP import.
 
+## External Marketplace
+
+1. Import the [external marketplace ZIP](../downloads/zsb-marketplace-1.0.0.zip) using **Plugins → Custom plugins → Import .zip**.
+2. Enable **Settings → Allow unverified plugins** after reviewing the [source](../plugins/zsb-marketplace/). Select **Turn on** for **ZSB Hub External Plugin Marketplace**.
+3. In **External Marketplace**, select a community plugin, then confirm **Install** or **Update**. Go to **Plugins** to enable or remove the imported plugin. If you enable the trust setting while the marketplace is open, use **Refresh catalog**.
+
+The marketplace needs the ZSB Hub desktop window for the install bridge. To update the marketplace itself, import its newest ZIP through the usual file picker.
+
 ## Publisher plugins
 
 1. Open **Plugins** and find the plugin by name.

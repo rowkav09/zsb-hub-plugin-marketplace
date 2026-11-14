@@ -14,11 +14,11 @@ The signed index format is `{format: 1, updatedAt, plugins: [...]}`. An entry co
 
 ## Community registry
 
-The site uses [catalog.json](../catalog.json) to describe bundled plugins and community packages. The installed app trusts the publisher key for the official feed. Community releases reach the stock app through **Import .zip**. A publisher JSON bundle is for the in-app catalog installer. The file picker expects a ZIP.
+The External Marketplace plugin fetches [catalog.json](../catalog.json) from this GitHub repository and lists its community entries. The installed app trusts the publisher key for the official feed. The marketplace checks ZIP size, SHA-256, and manifest ID, version, minimum core and default setting. It then passes the original ZIP to **Import .zip** through the desktop panel bridge. A publisher JSON bundle is for the in-app catalog installer. The file picker expects a ZIP.
 
 A ZIP can hold plugin files at the root or under a single wrapping folder. Use stored or deflated entries, up to 500 entries, 20 MiB compressed and 50 MiB unpacked. The ZIP loader rejects encrypted entries, ZIP64, unsafe relative paths and unsigned claims to official IDs. A ZIP that includes an intact publisher-signed plugin folder receives the verified status. Other community ZIPs require the app's unverified setting to run.
 
-The host loads CommonJS with ordinary Node `require()`. Plugins therefore run with the desktop user's privileges. A community SHA-256 protects against accidental changes to a specific download. Publisher verification comes from the release signature checked by the app.
+The host loads CommonJS with ordinary Node `require()`. Plugins therefore run with the desktop user's privileges. The community catalog and ZIPs are served over HTTPS. A matching SHA-256 checks a ZIP against the catalog entry. The community feed trusts this repository and its maintainers. Publisher verification comes from the release signature checked by the app.
 
 ## Provenance
 
