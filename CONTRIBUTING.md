@@ -20,6 +20,6 @@ python3 scripts/pack.py plugins/<id> -o downloads/<id>-<version>.zip
 
 Use the Account Pulse entry in [catalog.json](catalog.json) as the example for local `source` and `download` paths. Copy the SHA-256 printed by the packer to your entry.
 
-Run `npm ci`, `npm run build` and `npm run check`. Include the generated pages with the catalog change. Leave account exports, logs and credentials out of the package.
+Run `npm ci`, `npm run build` and `npm run check`. For a local package, also run `npm run check:packages` to compare the ZIP with its source. Include the generated pages with the catalog change. Leave account exports, logs and credentials out of the package.
 
 [Authoring guide](docs/authoring.md) · [Package and signing formats](docs/distribution.md) · [Agent skill](SKILL.md)

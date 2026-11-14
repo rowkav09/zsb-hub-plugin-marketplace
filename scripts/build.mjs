@@ -8,6 +8,11 @@ const root = new URL('../', import.meta.url);
 const read = async path => readFile(new URL(path, root), 'utf8');
 const catalog = JSON.parse(await read('catalog.json'));
 const check = process.argv.includes('--check');
+const numericVersion = value => typeof value === 'string' && /^\d+\.\d+\.\d+$/.test(value);
+const sha256Hex = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+if (catalog.format !== 1 || !Array.isArray(catalog.plugins) || !catalog.plugins.length) {
+  throw new Error('catalog.json needs format 1 and a nonempty plugins array');
+}
 const submitUrl = 'https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml';
 const isHttps = value => {
   if (typeof value !== 'string' || !value.startsWith('https://')) return false;
@@ -48,12 +53,17 @@ const relative = (from, to) => posix.relative(posix.dirname(from), to);
 
 const ids = new Set();
 for (const p of catalog.plugins) {
-  if (!/^[a-z0-9-]{1,40}$/.test(p.id) || ids.has(p.id)) throw new Error(`Invalid or repeated ID: ${p.id}`);
+  if (typeof p?.id !== 'string' || !/^[a-z0-9-]{1,40}$/.test(p.id) || ids.has(p.id)) {
+    throw new Error(`Invalid or repeated ID: ${p?.id}`);
+  }
   ids.add(p.id);
   for (const field of ['name', 'category', 'summary', 'overview', 'integration', 'operation', 'version', 'minCore']) {
     if (typeof p[field] !== 'string' || !p[field].trim()) throw new Error(`${p.id} needs ${field}`);
   }
   if (!Object.hasOwn(icons, p.category)) throw new Error(`Unknown category: ${p.category}`);
+  if (!numericVersion(p.version) || !numericVersion(p.minCore) || typeof p.defaultEnabled !== 'boolean') {
+    throw new Error(`${p.id} requires numeric x.y.z compatibility and a boolean defaultEnabled`);
+  }
   if (p.kind === 'bundled') {
     if (p.publisher && (!/^[a-z0-9.-]+\.json$/.test(p.publisher.file) || !/^[a-f0-9]{64}$/.test(p.publisher.sha256))) {
       throw new Error(`Invalid publisher package: ${p.id}`);
@@ -61,7 +71,8 @@ for (const p of catalog.plugins) {
     continue;
   }
   if (p.kind !== 'community') throw new Error(`Unknown plugin kind: ${p.kind}`);
-  if (!p.author || !p.license || !/^[a-f0-9]{64}$/.test(p.sha256)) {
+  if (typeof p.author !== 'string' || !p.author.trim() || typeof p.license !== 'string'
+    || !p.license.trim() || !sha256Hex(p.sha256)) {
     throw new Error(`Community listing requires an author, license and SHA-256: ${p.id}`);
   }
   if (isHttps(p.source) && isHttps(p.download)) {
@@ -81,6 +92,10 @@ for (const p of catalog.plugins) {
   const manifest = JSON.parse(manifestText);
   for (const key of ['id', 'name', 'version', 'minCore', 'defaultEnabled']) {
     if (p[key] !== manifest[key]) throw new Error(`${p.id} catalog and manifest disagree on ${key}`);
+  }
+  if (typeof manifest.main !== 'string' || !manifest.main.split('/').every(part =>
+    part && part !== '.' && part !== '..' && !/[\\:%?#]/.test(part))) {
+    throw new Error(`${p.id} manifest.main must be a relative path inside the plugin directory`);
   }
   await access(new URL(p.source + manifest.main, root));
   const hash = createHash('sha256').update(zip).digest('hex');

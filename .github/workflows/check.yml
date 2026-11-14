@@ -1,22 +1,65 @@
-name: Check marketplace
+name: CI
+
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  validate:
+    name: Catalog and plugin packages
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
       - run: npm ci
-      - run: npm run check
-      - run: node --check plugins/account-pulse/index.js
-      - run: |
-          unzip -t downloads/account-pulse-1.0.0.zip
-          unzip -p downloads/account-pulse-1.0.0.zip index.js | cmp plugins/account-pulse/index.js -
-          unzip -p downloads/account-pulse-1.0.0.zip plugin.json | cmp plugins/account-pulse/plugin.json -
+      - name: Check catalog and generated pages
+        run: npm run check
+      - name: Rebuild and compare every local plugin ZIP
+        run: npm run check:packages
+      - name: Run plugin tests
+        run: npm test
+      - name: Verify the pinned publisher catalog and bundles
+        run: npm run check:publisher
+
+  browser:
+    name: Marketplace browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

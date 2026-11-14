@@ -1,17 +1,16 @@
 <div align="center">
 
 <pre>
-+------------------------------------------+
-|                                          |
-|   ZZZZZZZ   SSSSSS   BBBBBB              |
-|        ZZ   SS        BB   BB            |
-|      ZZ      SSSSS    BBBBBB     [ + ]   |
-|    ZZ            SS   BB   BB            |
-|   ZZZZZZZ   SSSSSS   BBBBBB              |
-|                                          |
-|        P L U G I N   M A R K E T         |
-|                                          |
-+------------------------------------------+
+        .----------------.
+       /                /|
+      /    .--------.  / |       ______ _____ ____
+     /____/________/__/  |      |___  // ____|  _ \
+     |                |  |         / /| (___ | |_) |
+     |    o      o    |  /        / /  \___ \|  _ &lt;
+     |____.------.____| /        / /__ ____) | |_) |
+          |  ||  |    |/        /_____|_____/|____/
+          |__||__|
+                                P L U G I N   H U B
 </pre>
 
 <h1>ZSB Hub Plugin Marketplace</h1>
@@ -25,7 +24,7 @@
   <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml"><strong>Submit a plugin</strong></a>
 </p>
 
-[![Catalog checks](https://github.com/rowkav09/zsb-hub-plugin-marketplace/actions/workflows/check.yml/badge.svg)](https://github.com/rowkav09/zsb-hub-plugin-marketplace/actions/workflows/check.yml)
+[![CI](https://github.com/rowkav09/zsb-hub-plugin-marketplace/actions/workflows/check.yml/badge.svg)](https://github.com/rowkav09/zsb-hub-plugin-marketplace/actions/workflows/check.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -96,6 +95,16 @@ python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
 Use Node.js 24 and Python 3.10+. Open [localhost:8000](http://127.0.0.1:8000) for the searchable marketplace and individual plugin pages. Edit `catalog.json` and the Markdown docs, then regenerate the checked-in HTML.
+
+CI checks generated pages, rebuilds every local ZIP, tests the sample plugin with fixtures, verifies publisher signatures and SHA-256, and runs the marketplace in desktop and mobile Chromium. Run the same checks locally:
+
+```sh
+npm run check:packages
+npm test
+npm run check:publisher
+npx playwright install chromium
+npm run test:browser
+```
 
 ## License and attribution
 

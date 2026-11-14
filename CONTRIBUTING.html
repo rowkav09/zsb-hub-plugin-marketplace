@@ -37,7 +37,7 @@
 <pre><code class="language-sh">python3 scripts/pack.py plugins/&lt;id&gt; -o downloads/&lt;id&gt;-&lt;version&gt;.zip
 </code></pre>
 <p>Use the Account Pulse entry in <a href="catalog.json">catalog.json</a> as the example for local <code>source</code> and <code>download</code> paths. Copy the SHA-256 printed by the packer to your entry.</p>
-<p>Run <code>npm ci</code>, <code>npm run build</code> and <code>npm run check</code>. Include the generated pages with the catalog change. Leave account exports, logs and credentials out of the package.</p>
+<p>Run <code>npm ci</code>, <code>npm run build</code> and <code>npm run check</code>. For a local package, also run <code>npm run check:packages</code> to compare the ZIP with its source. Include the generated pages with the catalog change. Leave account exports, logs and credentials out of the package.</p>
 <p><a href="docs/authoring.html">Authoring guide</a> · <a href="docs/distribution.html">Package and signing formats</a> · <a href="SKILL.md">Agent skill</a></p>
 </article>
   </main>

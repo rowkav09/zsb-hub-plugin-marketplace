@@ -1,0 +1,22 @@
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  testMatch: '*.spec.mjs',
+  forbidOnly: Boolean(process.env.CI),
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  use: {
+    baseURL: 'http://127.0.0.1:8895',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+  ],
+  webServer: {
+    command: 'python3 -m http.server 8895 --bind 127.0.0.1',
+    url: 'http://127.0.0.1:8895',
+    reuseExistingServer: false,
+  },
+});

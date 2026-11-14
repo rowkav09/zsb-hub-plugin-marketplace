@@ -11,3 +11,5 @@ income.json
 plugin-data/
 Partitions/
 Cookies*
+/playwright-report/
+/test-results/
