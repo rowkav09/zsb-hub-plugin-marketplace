@@ -8,7 +8,7 @@
 
 <p>
   <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace#bundled-plugin-directory"><strong>Browse plugins</strong></a> ·
-  <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip"><strong>Download the marketplace ZIP</strong></a> ·
+  <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.1.0/zsb-marketplace-1.1.0.zip"><strong>Download the marketplace ZIP</strong></a> ·
   <a href="docs/framework.md">Framework</a> ·
   <a href="https://github.com/rowkav09/zsb-hub-plugin-marketplace/issues/new?template=submit-plugin.yml"><strong>Submit a plugin</strong></a>
 </p>
@@ -20,20 +20,20 @@
 
 ## Install the External Marketplace
 
-1. [Download the External Marketplace ZIP](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip). In ZSB Hub, open **Plugins → Custom plugins → Import .zip** and choose the ZIP.
+1. [Download the External Marketplace ZIP](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.1.0/zsb-marketplace-1.1.0.zip). In ZSB Hub, open **Plugins → Custom plugins → Import .zip** and choose the ZIP.
 2. After reviewing the [source](plugins/zsb-marketplace/), enable **Settings → Allow unverified plugins**, then turn on **ZSB Hub External Plugin Marketplace** in Plugins.
-3. In the **External Marketplace** tab, select a plugin and choose **Install** or **Update**. Enable newly installed plugins from the normal **Plugins** list.
+3. In **External Marketplace**, choose **Check for updates** to refresh the catalog. Install a new plugin from its listing or confirm an **Update** under **Updates available**. Enable newly installed plugins from the normal **Plugins** list.
 
 This is a community feed served from this GitHub repository. The Hub's official catalog remains available under **Plugins**. The desktop panel integration was tested with [ZSB Hub 1.2.7-beta.1](https://github.com/GothGirlZSB/zsb-hub-releases/releases/tag/v1.2.7-beta.1) on Linux. [Installation and troubleshooting](docs/install.md)
 
 | Community plugin | What it does | ZIP |
 | --- | --- | --- |
-| [External Marketplace](plugins/zsb-marketplace/) | Lists, installs and updates community plugins from this repository. | [Download](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip) |
+| [External Marketplace](plugins/zsb-marketplace/) | Lists, installs and updates community plugins from this repository. | [Download](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.1.0/zsb-marketplace-1.1.0.zip) |
 | [Daily reports](plugins/daily-reports/) by Gufries | Tracks daily gains, clicks, downtime and plugin activity, including Auto Forge counters. | [Download](downloads/daily-reports-1.0.1.zip) |
 | [Terminal opener](plugins/terminal-opener/) by Gufries | Opens Genesis and Dead Hand terminals on selected accounts. Accepted offers spend account balance. | [Download](downloads/terminal-opener-1.0.0.zip) |
-| [Skillmap Presets](plugins/skillmap-presets/) | Preview and apply skill builds across farm accounts within per-account limits. Requires Hub 1.2.8+. | [Download](downloads/skillmap-presets-1.0.1.zip) |
+| [Skillmap Presets](plugins/skillmap-presets/) | Preview and apply skill builds across farm accounts within per-account limits. Requires Hub 1.2.8+. | [Download](downloads/skillmap-presets-1.0.2.zip) |
 | [Auto Forge](plugins/auto-forge/) | Pick skins from inventory, approve a capped batch, and optionally chain upgrades to Legendary. Requires Hub 1.2.8+. | [Download](downloads/auto-forge-1.1.1.zip) |
-| [Auto Skin Collection Completer](plugins/auto-skin-collection/) | Open owned cases first, buy to fill gaps, submit drops and claim rewards. Estimates Armory credits and opens Armory cases individually. | [Download](downloads/auto-skin-collection-1.2.0.zip) |
+| [Auto Skin Collection Completer](plugins/auto-skin-collection/) | Open owned cases first, buy to fill gaps, submit drops and claim rewards. Track per-account collection progress and estimate Armory costs using rarity odds. | [Download](downloads/auto-skin-collection-1.3.0.zip) |
 | [Auto Trade Favourites](plugins/auto-trade-favourites/) | Send favourites from farm accounts to a collector under value and trade caps. | [Download](downloads/auto-trade-favourites-1.0.0.zip) |
 | [Auto Sort SU](plugins/auto-sort-su/) | Sort skins into storage units with priority rules per account. | [Download](downloads/auto-sort-su-1.0.0.zip) |
 

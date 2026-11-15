@@ -1,7 +1,7 @@
 {
   "id": "zsb-marketplace",
   "name": "ZSB Hub External Plugin Marketplace",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Browse, install and update community plugins from the GitHub marketplace inside ZSB Hub.",
   "minCore": "1.2.7",
   "main": "index.js",

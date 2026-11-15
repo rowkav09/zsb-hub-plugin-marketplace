@@ -4,7 +4,7 @@ const { randomUUID } = require('node:crypto');
 const { MAPS, parseMap, presetIds, purchasePlan, snapshot } = require('./planning');
 
 const TTL = 10 * 60_000;
-const HANDOFF_MS = 20_000;
+const HANDOFF_MS = 15 * 60_000;
 const money = amount => '$' + amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 function start(ctx) {
@@ -25,18 +25,15 @@ function start(ctx) {
   const conflict = id => ctx.accounts.busy(id) || ctx.accounts.wanted(id);
   const conflictText = busy => busy.what ? 'Account in use · ' + busy.what : 'Another plugin is using this account';
 
-  async function acquire(id) {
-    if (conflict(id) && ctx.accounts.want) {
-      ctx.accounts.want(id, 'Skillmap Presets');
-      try {
-        const deadline = Date.now() + HANDOFF_MS;
-        while (active() && !blocker(id) && conflict(id) && Date.now() < deadline) {
-          await new Promise(resolve => setTimeout(resolve, 250));
-        }
-      } finally {
-        ctx.accounts.want(id, null);
-      }
+  function release(id) {
+    if (task.pending?.delete(id)) ctx.accounts.want(id, null);
+  }
+
+  async function acquire(id, deadline) {
+    while (task.pending?.has(id) && active() && !blocker(id) && conflict(id) && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
+    release(id);
     const busy = conflict(id);
     const reason = !active() ? 'Stopped' : blocker(id) || (busy && conflictText(busy));
     if (reason) return reason;
@@ -73,6 +70,7 @@ function start(ctx) {
       message = error.message;
       return { ok: false, error: message };
     } finally {
+      for (const id of task.pending || []) release(id);
       task = null;
       progress = '';
     }
@@ -117,13 +115,18 @@ function start(ctx) {
     preview = null;
     let confirmed = 0;
     let uncertain = 0;
+    const deadline = Date.now() + HANDOFF_MS;
+    if (ctx.accounts.want) {
+      task.pending = new Set(plan.rows.filter(row => row.steps.length && !blocker(row.account.id)).map(row => row.account.id));
+      for (const id of task.pending) ctx.accounts.want(id, 'Skillmap Presets');
+    }
     for (const row of plan.rows) {
       if (!active() || uncertain) break;
       if (!row.steps.length) continue;
       const aid = row.account.id;
       const name = row.account.name || aid;
       progress = 'Waiting for ' + name + '…';
-      const reason = await acquire(aid);
+      const reason = await acquire(aid, deadline);
       if (reason) {
         last.push([name, 0, reason]);
         continue;

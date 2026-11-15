@@ -21,7 +21,7 @@
       "external-network"
     ],
     "reason": "Uses Electron for the Hub panel bridge and fetch for the validated catalog and ZIP downloads.",
-    "sha256": "15d3f14c60917334893e5daea243f836d1a2b9e9d52e852ebcf7f1472deccd25"
+    "sha256": "360dd71223d35a1fa6d36a1695d6cc2a24e51f6723780f07b209234abb4873bd"
   },
   "daily-reports/index.js": {
     "rules": [

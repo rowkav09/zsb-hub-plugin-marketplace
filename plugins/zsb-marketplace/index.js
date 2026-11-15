@@ -27,7 +27,7 @@ function startMarketplace(ctx, hub, fetcher) {
     if (!local) return { label: 'Available', button: 'Install' };
     if (local.bundled) return { label: 'Built into this Hub' };
     const compared = compareVersions(entry.version, local.version);
-    if (compared > 0) return { label: `Installed ${local.version}`, button: 'Update' };
+    if (compared > 0) return { label: `Installed ${local.version} → ${entry.version} available`, button: 'Update' };
     return { label: compared === 0 ? 'Installed' : `Installed ${local.version} (newer)` };
   }
 
@@ -55,12 +55,13 @@ function startMarketplace(ctx, hub, fetcher) {
 
   const refresh = () => run('Checking GitHub…', async () => {
     await syncHub();
-    const latest = (await fetchCatalog(fetcher, requestSignal())).filter(entry => entry.id !== ctx.id);
+    const latest = await fetchCatalog(fetcher, requestSignal());
     if (stopped()) throw new Error('Marketplace was turned off.');
     entries = latest;
     loaded = true;
-    if (!entries.some(entry => entry.id === selected)) selected = entries[0]?.id ?? null;
-    return { message: `Catalog refreshed. ${entries.length} community plugin(s).` };
+    if (!entries.some(entry => entry.id === selected)) selected = entries.find(entry => entry.id !== ctx.id)?.id ?? null;
+    const updates = entries.filter(entry => actionFor(entry).button === 'Update').length;
+    return { message: updates ? `${updates} update(s) available. Choose which to install.` : 'Catalog refreshed. Your marketplace plugins are up to date.' };
   });
 
   ctx.panel.action('refresh', refresh);
@@ -92,19 +93,37 @@ function startMarketplace(ctx, hub, fetcher) {
     return { message };
   }));
 
+  function packageButton(entry, verb) {
+    return {
+      label: `${verb} ${entry.name}`, action: 'install', arg: entry.id, primary: true,
+      confirm: `${verb} ${entry.name} to ${entry.version} from GitHub? Community plugins run with your desktop user's permissions.`,
+    };
+  }
+
   ctx.panel.tab('External Marketplace', () => {
     const entry = entries.find(plugin => plugin.id === selected);
     const status = entry && actionFor(entry);
     const blocks = [
-      { type: 'buttons', items: [{ label: 'Refresh catalog', action: 'refresh' }] },
+      { type: 'buttons', items: [{ label: 'Check for updates', action: 'refresh' }] },
     ];
     if (working) blocks.push({ type: 'notice', text: working });
     if (notice) blocks.push(notice);
     if (!allowUnverified && loaded) {
       blocks.push({ type: 'notice', level: 'warn', text: 'Enable Allow unverified plugins in Hub Settings to install community ZIPs.' });
     }
+    const updates = entries.filter(item => actionFor(item).button === 'Update');
+    if (updates.length) {
+      blocks.push({
+        type: 'card', id: 'marketplace-updates', title: 'Updates available', open: true,
+        summary: updates.length + ' installed plugin(s)',
+        blocks: updates.flatMap(item => [
+          { type: 'text', text: `${item.name} · ${actionFor(item).label}` },
+          ...(!working && allowUnverified ? [{ type: 'buttons', items: [packageButton(item, 'Update')] }] : []),
+        ]),
+      });
+    }
     if (!entry) {
-      if (!working) blocks.push({ type: 'text', text: loaded ? 'No community plugins are listed.' : 'Refresh the catalog to load plugins from GitHub.' });
+      if (!working) blocks.push({ type: 'text', text: loaded ? 'No community plugins are listed.' : 'Check for updates to load the latest marketplace catalog.' });
       return { blocks };
     }
 
@@ -112,7 +131,7 @@ function startMarketplace(ctx, hub, fetcher) {
       type: 'picker',
       tag: 'Selected',
       action: 'select',
-      items: entries.map(item => ({
+      items: entries.filter(item => item.id !== ctx.id).map(item => ({
         id: item.id,
         title: item.name,
         sub: item.summary,
@@ -123,27 +142,13 @@ function startMarketplace(ctx, hub, fetcher) {
     blocks.push({ type: 'section', title: entry.name, blocks: [
       { type: 'text', text: `By ${entry.author} · ${entry.license} · Hub ${entry.minCore} or newer` },
       { type: 'text', text: `Source: ${entry.source}` },
-      ...(status.button && !working && allowUnverified ? [{
-        type: 'buttons',
-        items: [{
-          label: `${status.button} ${entry.name}`,
-          action: 'install',
-          arg: entry.id,
-          primary: true,
-          confirm: `Import ${entry.name} ${entry.version} from GitHub? Community plugins run with your desktop user's permissions.`,
-        }],
-      }] : []),
+      ...(status.button === 'Install' && !working && allowUnverified ?
+        [{ type: 'buttons', items: [packageButton(entry, 'Install')] }] : []),
     ] });
     return { blocks };
   });
 
-  // A delayed refresh lets the bundled desktop panel finish loading at app startup.
-  const pending = setTimeout(() => { if (!stopped() && !loaded && !working) refresh(); }, 1500);
-  pending.unref?.();
-  return () => {
-    clearTimeout(pending);
-    lifetime.abort();
-  };
+  return () => lifetime.abort();
 }
 
 let stop;

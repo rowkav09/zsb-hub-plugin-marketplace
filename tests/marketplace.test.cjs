@@ -76,6 +76,15 @@ test('updates an older community install and preserves newer or bundled copies',
   }
 });
 
+test('discovers a marketplace self-update only on a manual check', async t => {
+  const fixture = makeFixture(t, { installed: [{ id: 'zsb-marketplace', version: '1.0.0' }] });
+  assert(!JSON.stringify(fixture.render()).includes('Updates available'));
+  assert.equal(fixture.imports(), 0);
+  await fixture.action('refresh');
+  assert.match(JSON.stringify(fixture.render()), /Update ZSB Hub External Plugin Marketplace/);
+  assert.equal(fixture.imports(), 0);
+});
+
 test('refuses unsigned imports when disabled, wrong manifests, bad hashes and incompatible Hub versions', async t => {
   for (const [options, problem] of [
     [{ allowUnverified: false }, /Allow unverified plugins/],

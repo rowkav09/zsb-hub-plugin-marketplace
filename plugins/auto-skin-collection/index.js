@@ -2,6 +2,8 @@
 
 const { availablePrice, bounded, createBatch, idOk, money, notFavorite, Unconfirmed } = require('./farm-batch');
 
+const { startOverview } = require('./overview');
+
 const COLLECTION = '/api/skinCollection';
 const ARMORY = '/api/armory';
 const ARMORY_BUNDLE = 10;
@@ -349,7 +351,15 @@ async function apply(api, job, plan) {
 let stop;
 module.exports = {
   start(ctx) {
-    stop = createBatch(ctx, {
+    const overview = startOverview(ctx, { shop, stock, progress, armoryCredits });
+    const panel = {
+      ...ctx.panel,
+      tab: (title, render) => ctx.panel.tab(title, () => {
+        const batch = render();
+        return { ...batch, blocks: [...overview.blocks(), ...batch.blocks] };
+      }),
+    };
+    const stopBatch = createBatch({ ...ctx, get stopping() { return ctx.stopping; }, panel }, {
       title: 'Auto Skin Collection Completer', tab: 'Skin Collections',
       keys: ['runMode', 'on', 'accounts', 'targets', 'collections', 'maxSkin', 'submissions', 'redeem', 'source', 'armory', 'armoryCredits', 'opens', 'spend', 'reserve', 'minutes'],
       columns: ['Account', 'Collection', 'Operation', 'Maximum value'], resultColumns: ['Account'],
@@ -359,6 +369,7 @@ module.exports = {
         + ' plus ' + plan.rules.credits + ' Armory credits within the enabled sources.',
       scan, apply,
     });
+    stop = () => { overview.stop(); stopBatch(); };
   },
   stop() { stop?.(); },
 };

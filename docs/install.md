@@ -4,11 +4,11 @@ Use the **Plugins** tab in ZSB Hub. The steps here were checked against [ZSB Hub
 
 ## External Marketplace
 
-1. Import the [external marketplace ZIP](../downloads/zsb-marketplace-1.0.0.zip) using **Plugins → Custom plugins → Import .zip**.
+1. Import the [external marketplace ZIP](../downloads/zsb-marketplace-1.1.0.zip) using **Plugins → Custom plugins → Import .zip**.
 2. Enable **Settings → Allow unverified plugins** after reviewing the [source](../plugins/zsb-marketplace/). Select **Turn on** for **ZSB Hub External Plugin Marketplace**.
-3. In **External Marketplace**, select a community plugin, then confirm **Install** or **Update**. Go to **Plugins** to enable or remove the imported plugin. If you enable the trust setting while the marketplace is open, use **Refresh catalog**.
+3. In **External Marketplace**, choose **Check for updates**. Select **Update** for the versions you want to apply. To add a new plugin, select its listing and confirm **Install**. Go to **Plugins** to enable or remove an imported plugin.
 
-The marketplace needs the ZSB Hub desktop window for the install bridge. To update the marketplace itself, import its newest ZIP through the usual file picker.
+The marketplace needs the ZSB Hub desktop window for the install bridge. Marketplace 1.1.0 also lists new versions of itself under **Updates available**. Upgrade a 1.0.0 install once by importing the latest ZIP.
 
 ## Publisher plugins
 
