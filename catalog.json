@@ -345,6 +345,42 @@
       "source": "plugins/zsb-marketplace/",
       "download": "downloads/zsb-marketplace-1.1.0.zip",
       "sha256": "9b72d1e24b23edd6e1e061c8965eeb11d07803afcb95e801e878bbfb0516f1d6"
+    },
+    {
+      "id": "auction-sniper",
+      "name": "Auction Sniper",
+      "kind": "community",
+      "category": "Inventory",
+      "summary": "Find discounted auctions and place capped autobids from Hub’s main account.",
+      "overview": "Preview live auction quotes using ChunkyCheese PriceData and approve a batch. Optional scheduled scanning and autobids.",
+      "integration": "Rechecks the seller, lot, main account balance and route. Confirms the site’s autobid receipt.",
+      "operation": "Practice preview and optional live bids",
+      "version": "1.0.0",
+      "minCore": "1.2.8",
+      "defaultEnabled": false,
+      "author": "Rowan Kavanagh",
+      "license": "MIT",
+      "source": "plugins/auction-sniper/",
+      "download": "downloads/auction-sniper-1.0.0.zip",
+      "sha256": "1870214a6b9d5483f1727c2ad7b5c84fe5e0cec711bfe9f240388a2ab7199092"
+    },
+    {
+      "id": "farm-value",
+      "name": "Farm Value",
+      "kind": "community",
+      "category": "Farming",
+      "summary": "Chart the combined inventory, cash and token balances of every Hub account.",
+      "overview": "Track ChunkyCheese-priced inventory and storage units alongside cash and converted tokens in a stacked history.",
+      "integration": "Reads balances and inventory through Hub routes and plots saved samples in a local chart window.",
+      "operation": "Read-only snapshots and history",
+      "version": "1.0.0",
+      "minCore": "1.2.8",
+      "defaultEnabled": false,
+      "author": "Rowan Kavanagh",
+      "license": "MIT",
+      "source": "plugins/farm-value/",
+      "download": "downloads/farm-value-1.0.0.zip",
+      "sha256": "1346d92bf1ba57c3e3a3f5a25e921688bb68b54530816b3795f3b04b18d4ceab"
     }
   ]
 }

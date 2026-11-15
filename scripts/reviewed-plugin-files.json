@@ -29,5 +29,28 @@
     ],
     "reason": "Reads saved counters from a fixed list of sibling plugin JSON files.",
     "sha256": "e99eaf94e55c9515ac93af26117f7dab50a5ca54dbb579cd020d9edda4a6550b"
+  },
+  "auction-sniper/cco-price-data.js": {
+    "rules": [
+      "external-url",
+      "external-network"
+    ],
+    "reason": "Downloads the public ChunkyCheese PriceData CSV from a fixed Google Sheets URL. Sends no account data.",
+    "sha256": "684e67ba3ec826f2c74dc553b1f7eee87a78b620397f3655101eb87e30e2502f"
+  },
+  "farm-value/cco-price-data.js": {
+    "rules": [
+      "external-url",
+      "external-network"
+    ],
+    "reason": "Downloads the public ChunkyCheese PriceData CSV from a fixed Google Sheets URL. Sends no account data.",
+    "sha256": "684e67ba3ec826f2c74dc553b1f7eee87a78b620397f3655101eb87e30e2502f"
+  },
+  "farm-value/index.js": {
+    "rules": [
+      "privileged-module"
+    ],
+    "reason": "Opens a local sandboxed BrowserWindow to display numeric history samples.",
+    "sha256": "01ec54401fcc3f8923051c72b51e97bccd8c0315805e2436e97320a5376cbc46"
   }
 }

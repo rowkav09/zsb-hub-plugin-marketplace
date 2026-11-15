@@ -1,0 +1,19 @@
+{
+  "id": "auction-sniper",
+  "name": "Auction Sniper",
+  "version": "1.0.0",
+  "description": "Scan auctions and place budgeted autobids for the Hub main account using ChunkyCheese PriceData.",
+  "minCore": "1.2.8",
+  "main": "index.js",
+  "tab": "Auction Sniper",
+  "group": "Inventory",
+  "power": true,
+  "defaultEnabled": false,
+  "packageShared": ["cco-price-data.js"],
+  "settings": {
+    "tokensPerDollar": { "type": "number", "label": "Tokens per $1 in-game value", "default": 10, "min": 0.01 },
+    "percent": { "type": "number", "label": "Bid up to this percent of estimated value", "default": 65, "min": 1, "max": 100 },
+    "bidCap": { "type": "number", "label": "Maximum tokens per auction", "default": 0, "min": 0, "max": 1000000000 },
+    "budget": { "type": "number", "label": "Total autobid commitments per 24 hours (tokens)", "default": 0, "min": 0, "max": 1000000000 }
+  }
+}
