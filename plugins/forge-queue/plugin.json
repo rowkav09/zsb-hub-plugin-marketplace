@@ -1,0 +1,40 @@
+{
+  "id": "forge-queue",
+  "name": "Forge Queue",
+  "version": "1.0.0",
+  "description": "Preview and run capped skin-forging batches across selected ZSB Hub farm accounts.",
+  "minCore": "1.2.8",
+  "main": "index.js",
+  "tab": "Forge Queue",
+  "group": "farming",
+  "defaultEnabled": false,
+  "settings": {
+    "accounts": { "type": "accounts", "label": "Farm accounts" },
+    "name": { "type": "text", "label": "Skin name contains", "default": "", "help": "Leave blank to scan all eligible skins." },
+    "quality": {
+      "type": "choice",
+      "label": "Starting quality",
+      "default": "0",
+      "options": [
+        { "value": "0", "label": "Common to Rare" },
+        { "value": "1", "label": "Rare to Epic" },
+        { "value": "2", "label": "Epic to Legendary" },
+        { "value": "any", "label": "Any below Legendary" }
+      ]
+    },
+    "skinType": {
+      "type": "choice",
+      "label": "Skin type",
+      "default": "normal",
+      "options": [
+        { "value": "normal", "label": "Normal only" },
+        { "value": "stattrak", "label": "StatTrak only" },
+        { "value": "any", "label": "Normal and StatTrak" }
+      ]
+    },
+    "maxPrice": { "type": "number", "label": "Maximum skin value ($)", "default": 0, "min": 0, "help": "Set an explicit value cap before scanning." },
+    "perAccount": { "type": "number", "label": "Attempts per account", "default": 5, "min": 1, "max": 50 },
+    "batchLimit": { "type": "number", "label": "Total attempts per batch", "default": 25, "min": 1, "max": 250 },
+    "pages": { "type": "number", "label": "Inventory pages per account", "default": 3, "min": 1, "max": 25 }
+  }
+}

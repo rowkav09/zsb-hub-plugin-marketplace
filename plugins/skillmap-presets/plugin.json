@@ -1,0 +1,30 @@
+{
+  "id": "skillmap-presets",
+  "name": "Skillmap Presets",
+  "version": "1.0.0",
+  "description": "Compare and apply skill builds for case farming, money clicking and opening across selected ZSB Hub accounts.",
+  "minCore": "1.2.8",
+  "main": "index.js",
+  "tab": "Skillmap Presets",
+  "group": "farming",
+  "defaultEnabled": false,
+  "settings": {
+    "accounts": { "type": "accounts", "label": "Farm accounts" },
+    "preset": {
+      "type": "choice",
+      "label": "Build",
+      "default": "case-farm",
+      "options": [
+        { "value": "case-farm", "label": "Case farming" },
+        { "value": "money-farm", "label": "Money clicking and vault" },
+        { "value": "opening", "label": "Larger case openings" },
+        { "value": "custom", "label": "Custom skill IDs" }
+      ]
+    },
+    "customIds": { "type": "textarea", "label": "Custom skill IDs", "default": "", "help": "Used with the Custom build. Separate IDs with spaces or commas." },
+    "fit": { "type": "boolean", "label": "Fit to each account's points, rank and budget", "default": true, "help": "When off, an account must be able to complete the whole build." },
+    "cashReserve": { "type": "number", "label": "Keep this much cash per account ($)", "default": 0, "min": 0 },
+    "maxSpend": { "type": "number", "label": "Spend at most per account ($)", "default": 1000, "min": 0 },
+    "maxPoints": { "type": "number", "label": "Spend at most this many skill points per account", "default": 54, "min": 1, "max": 250 }
+  }
+}
