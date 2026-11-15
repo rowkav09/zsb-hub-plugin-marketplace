@@ -90,4 +90,4 @@ npm run check:publisher
 
 ## License and attribution
 
-The original marketplace code and docs use the [MIT License](LICENSE). Daily reports and Terminal opener are credited to Gufries. Their downloaded ZIPs did not include a license. ZSB Hub and its publisher plugins are distributed upstream. This is an independent community directory. [ZSB Hub releases](https://github.com/GothGirlZSB/zsb-hub-releases)
+The original marketplace code and docs use the [MIT License](LICENSE). Daily reports and Terminal opener are credited to Gufries. Their downloaded ZIPs did not include a license. [Original Discord release post](https://discord.com/channels/1042469313820495952/1566908059555594290/1571322249494138973) ZSB Hub and its publisher plugins are distributed upstream. This is an independent community directory. [ZSB Hub releases](https://github.com/GothGirlZSB/zsb-hub-releases)
