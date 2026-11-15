@@ -112,16 +112,6 @@ function installChart(update) {
     unmount();
     if (!holder) return;
     const root = element('div', 'farm-value-chart');
-    const style = element('style');
-    style.textContent = `
-      .farm-value-chart{padding:10px 2px 4px}
-      .farm-value-chart .fv-legend{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 7px 4px}
-      .farm-value-chart .fv-legend button{padding:5px 10px;border-radius:8px;font-size:12px;display:inline-flex;align-items:center;gap:7px}
-      .farm-value-chart .fv-legend button[aria-pressed="false"]{opacity:.46}
-      .farm-value-chart .fv-legend i{width:9px;height:3px;border-radius:3px}
-      .farm-value-chart canvas{width:100%;height:clamp(230px,38vh,385px);display:block;touch-action:pan-y}
-      .farm-value-chart .fv-detail{font-size:12px;color:var(--text-2);min-height:18px;text-align:left;margin:6px 4px 0;font-variant-numeric:tabular-nums}
-    `;
     const legend = element('div', 'fv-legend');
     for (const [i, name] of lineNames.entries()) {
       const button = element('button', 'small');
@@ -141,7 +131,7 @@ function installChart(update) {
     canvas.setAttribute('aria-label', 'Combined farm value history in in-game dollars. Use arrow keys to inspect snapshots.');
     const summary = element('div', 'fv-detail');
     summary.setAttribute('aria-live', 'polite');
-    root.append(style, legend, canvas, summary);
+    root.append(legend, canvas, summary);
     const placeholder = holder.querySelector('.pnotice');
     if (placeholder) placeholder.hidden = true;
     holder.append(root);

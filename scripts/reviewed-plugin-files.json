@@ -52,6 +52,6 @@
       "dynamic-code"
     ],
     "reason": "Mounts the local history chart only in the installed Hub desktop panel using serialized numeric samples.",
-    "sha256": "447c1bfedba85260ac67f8bd176f0e19d1c71597ab61cfdf92ba9a90cb21152d"
+    "sha256": "102864f275d317e140e28ab865dfffed780017ceed4e10b7119195a20deb0887"
   }
 }

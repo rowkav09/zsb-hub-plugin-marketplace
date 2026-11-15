@@ -133,7 +133,6 @@ function start(ctx) {
   ctx.panel.tab('Farm Value', () => {
     const last = samples.at(-1);
     return { blocks: [
-      { type: 'settings', keys: ['tokensPerDollar', 'minutes'] },
       { type: 'buttons', items: [
         ...(working ? [{ action: 'stop', label: 'Stop snapshot', danger: true }] : [{ action: 'capture', label: 'Capture snapshot', primary: true }]),
       ] },
@@ -142,10 +141,11 @@ function start(ctx) {
         { label: 'Inventory', value: money(last.inventory) }, { label: 'Cash', value: money(last.cash) },
         { label: 'Tokens', value: last.tokens.toLocaleString('en-US') },
         { label: 'Combined value', value: money(last.inventory + last.cash + last.tokens / rate()) },
-        { label: 'Snapshots', value: samples.length },
       ] }] : []),
       { type: 'card', id: 'farm-value-history', title: 'Value history', open: true,
         blocks: [{ type: 'notice', text: 'Open the Farm Value tab in the desktop app to view the line chart.' }] },
+      { type: 'card', id: 'farm-value-settings', title: 'Snapshot settings', open: false,
+        keys: ['tokensPerDollar', 'minutes'] },
       ...(errors.length ? [{ type: 'table', columns: ['Account', 'Snapshot error'], rows: errors }] : []),
     ] };
   });
