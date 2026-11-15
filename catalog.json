@@ -257,6 +257,24 @@
       "sha256": "27733e30bf4a68cdf3d020a2d00c640e5b7e6bf10873d46837d7fbc25ee94cbd"
     },
     {
+      "id": "auto-grind",
+      "name": "Auto Grind",
+      "kind": "community",
+      "category": "Farming",
+      "summary": "Level a chosen account toward 5,000 Premier with one-click setup, repeated case opening and staged skillmaps.",
+      "overview": "Select a case, save a per-account plan and watch progress toward a configurable Premier target. Reserve cash for the next unlocked skill and use the rest for cases.",
+      "integration": "Sets the selected account to Hub Auto, uses its existing farming route and supports automatic enrollment from Routed Account Setup. Tested on Hub 1.2.8 and 1.2.11 desktop.",
+      "operation": "Opt-in leveling, case and skill purchases",
+      "version": "1.0.0",
+      "minCore": "1.2.8",
+      "defaultEnabled": false,
+      "author": "Rowan Kavanagh",
+      "license": "MIT",
+      "source": "plugins/auto-grind/",
+      "download": "downloads/auto-grind-1.0.0.zip",
+      "sha256": "da4602771355d53d8caf92c3e8abf8dc276d406ad5f99761fe88b03c6efc1ec8"
+    },
+    {
       "id": "auto-forge",
       "name": "Auto Forge",
       "kind": "community",
@@ -388,17 +406,17 @@
       "kind": "community",
       "category": "Farming",
       "summary": "Create and verify an alt through its farming proxy or WireGuard route. Supports Hub 1.2.8 and 1.2.11.",
-      "overview": "Open Farming → Account Setup to complete signup and email verification, then add the account from Hub.",
+      "overview": "Open Farming → Account Setup to complete signup and email verification, then add the account with optional Auto Grind enrollment.",
       "integration": "Uses the official Case Clicker signup in a routed window and saves the account with the selected route pinned.",
       "operation": "Manual signup, verification and account import",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
-      "source": "https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.1.1",
-      "download": "https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.1.1/zsb-account-setup-1.1.1.zip",
-      "sha256": "0cab9c90580cf4da1e295532908d13690f567b66942acee86c781f17fb694254"
+      "source": "https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.2.0",
+      "download": "https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.2.0/zsb-account-setup-1.2.0.zip",
+      "sha256": "284cd03eb1179bd79ef6f6224ade593e343abc9fb14651a6652b407cd1f1909b"
     }
   ]
 }

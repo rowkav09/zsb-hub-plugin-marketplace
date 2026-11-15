@@ -1,0 +1,181 @@
+{
+  "id": "auto-grind",
+  "name": "Auto Grind",
+  "version": "1.0.0",
+  "description": "Level selected accounts toward 5,000 Premier with Hub Auto clicking, case opening and staged skillmaps.",
+  "minCore": "1.2.8",
+  "main": "index.js",
+  "tab": "Auto Grind",
+  "group": "farming",
+  "defaultEnabled": false,
+  "settings": {
+    "account": {
+      "type": "account",
+      "label": "Hub account"
+    },
+    "case": {
+      "type": "choice",
+      "label": "Case to open",
+      "default": "cheapest",
+      "dynamic": true,
+      "options": [
+        {
+          "value": "cheapest",
+          "label": "Cheapest unlocked weapon case"
+        }
+      ]
+    },
+    "caseMax": {
+      "type": "number",
+      "label": "Maximum price per purchased case ($)",
+      "default": 5,
+      "min": 0,
+      "max": 10000,
+      "help": "Set to 0 to open owned cases only."
+    },
+    "target": {
+      "type": "number",
+      "label": "Premier target",
+      "default": 5000,
+      "min": 1000,
+      "max": 10000000
+    },
+    "continueOpening": {
+      "type": "boolean",
+      "label": "Keep opening cases after the target",
+      "default": false
+    },
+    "keepCash": {
+      "type": "number",
+      "label": "Keep this much cash untouched ($)",
+      "default": 0,
+      "min": 0,
+      "max": 1000000000,
+      "help": "Added to the amount reserved for the next skill."
+    },
+    "sellMax": {
+      "type": "number",
+      "label": "Sell newly opened common drops up to ($)",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "help": "0 keeps all drops. The leveler only sells eligible drops from its own opens."
+    },
+    "starter": {
+      "type": "choice",
+      "label": "Starter ranks",
+      "default": "frequency",
+      "options": [
+        {
+          "value": "frequency",
+          "label": "Case clicks · frequency first"
+        },
+        {
+          "value": "value",
+          "label": "Case clicks · case price first"
+        },
+        {
+          "value": "custom",
+          "label": "Custom skill IDs in order"
+        },
+        {
+          "value": "skip",
+          "label": "Skip skill spending at this milestone"
+        }
+      ]
+    },
+    "starterIds": {
+      "type": "textarea",
+      "label": "Starter ranks skill IDs",
+      "default": "",
+      "help": "Enter IDs in purchase priority, separated by commas or spaces. Prerequisites are added automatically."
+    },
+    "guardian": {
+      "type": "choice",
+      "label": "Master Guardian I",
+      "default": "frequency",
+      "options": [
+        {
+          "value": "frequency",
+          "label": "Case clicks · frequency first"
+        },
+        {
+          "value": "value",
+          "label": "Case clicks · case price first"
+        },
+        {
+          "value": "custom",
+          "label": "Custom skill IDs in order"
+        },
+        {
+          "value": "skip",
+          "label": "Skip skill spending at this milestone"
+        }
+      ]
+    },
+    "guardianIds": {
+      "type": "textarea",
+      "label": "Master Guardian I skill IDs",
+      "default": "",
+      "help": "Enter IDs in purchase priority, separated by commas or spaces. Prerequisites are added automatically."
+    },
+    "global": {
+      "type": "choice",
+      "label": "Global Elite",
+      "default": "frequency",
+      "options": [
+        {
+          "value": "frequency",
+          "label": "Case clicks · frequency first"
+        },
+        {
+          "value": "value",
+          "label": "Case clicks · case price first"
+        },
+        {
+          "value": "custom",
+          "label": "Custom skill IDs in order"
+        },
+        {
+          "value": "skip",
+          "label": "Skip skill spending at this milestone"
+        }
+      ]
+    },
+    "globalIds": {
+      "type": "textarea",
+      "label": "Global Elite skill IDs",
+      "default": "",
+      "help": "Enter IDs in purchase priority, separated by commas or spaces. Prerequisites are added automatically."
+    },
+    "premier": {
+      "type": "choice",
+      "label": "5,000 Premier",
+      "default": "frequency",
+      "options": [
+        {
+          "value": "frequency",
+          "label": "Case clicks · frequency first"
+        },
+        {
+          "value": "value",
+          "label": "Case clicks · case price first"
+        },
+        {
+          "value": "custom",
+          "label": "Custom skill IDs in order"
+        },
+        {
+          "value": "skip",
+          "label": "Skip skill spending at this milestone"
+        }
+      ]
+    },
+    "premierIds": {
+      "type": "textarea",
+      "label": "5,000 Premier skill IDs",
+      "default": "",
+      "help": "Enter IDs in purchase priority, separated by commas or spaces. Prerequisites are added automatically."
+    }
+  }
+}

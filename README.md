@@ -32,13 +32,14 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | [Daily reports](plugins/daily-reports/) by Gufries | Tracks daily gains, clicks, downtime and plugin activity, including Auto Forge counters. | [Download](downloads/daily-reports-1.0.1.zip) |
 | [Terminal opener](plugins/terminal-opener/) by Gufries | Opens Genesis and Dead Hand terminals on selected accounts. Accepted offers spend account balance. | [Download](downloads/terminal-opener-1.0.0.zip) |
 | [Skillmap Presets](plugins/skillmap-presets/) | Preview and apply skill builds across farm accounts within per-account limits. Requires Hub 1.2.8+. | [Download](downloads/skillmap-presets-1.0.2.zip) |
+| [Auto Grind](plugins/auto-grind/) | Level accounts toward 5,000 Premier with repeated case opening, staged skillmaps and cash reserved for the next unlocked skill. | [Download](downloads/auto-grind-1.0.0.zip) |
 | [Auto Forge](plugins/auto-forge/) | Pick skins from inventory, approve a capped batch, and optionally chain upgrades to Legendary. Requires Hub 1.2.8+. | [Download](downloads/auto-forge-1.1.1.zip) |
 | [Auto Skin Collection Completer](plugins/auto-skin-collection/) | Open owned cases first, buy to fill gaps, submit drops and claim rewards. Track per-account collection progress and estimate Armory costs using rarity odds. | [Download](downloads/auto-skin-collection-1.3.0.zip) |
 | [Auto Trade Favourites](plugins/auto-trade-favourites/) | Send favourites from farm accounts to a collector under value and trade caps. | [Download](downloads/auto-trade-favourites-1.0.0.zip) |
 | [Auto Sort SU](plugins/auto-sort-su/) | Sort skins into storage units with priority rules per account. | [Download](downloads/auto-sort-su-1.0.0.zip) |
 | [Auction Sniper](plugins/auction-sniper/) | Preview and place capped autobids from the Hub main account. | [Download](downloads/auction-sniper-1.0.1.zip) |
 | [Farm Value](plugins/farm-value/) | Track aggregate inventory, cash and tokens on a line chart inside Hub. | [Download](downloads/farm-value-1.1.1.zip) |
-| [Routed Account Setup](https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.1.1) | Create a new account through its farm route, verify email and add it to Hub. External release for Hub 1.2.8 and 1.2.11. | [Download](https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.1.1/zsb-account-setup-1.1.1.zip) |
+| [Routed Account Setup](https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.2.0) | Create a new account through its farm route, verify email and optionally enroll it in Auto Grind. External release for Hub 1.2.8 and 1.2.11. | [Download](https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.2.0/zsb-account-setup-1.2.0.zip) |
 
 ## Bundled plugin directory
 

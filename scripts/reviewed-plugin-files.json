@@ -68,7 +68,7 @@
       "external-url"
     ],
     "reason": "Uses Electron, the installed Hub host and transport modules, and checks clipboard links against the official verification endpoint.",
-    "sha256": "18838d1bb131de24c8401888a15e6a7493d9340a9115620fdd6a08716ccfd0ed"
+    "sha256": "3836af4c9717185ce931d238e2eb5273fac8f5286303a67a01c08fec1b32179c"
   },
   "zsb-account-setup/routed-session.js": {
     "rules": [
@@ -78,5 +78,19 @@
     ],
     "reason": "Uses the selected routed Chromium session for Case Clicker and reads the login token only from the signup window on that origin to hand the account to Hub.",
     "sha256": "58f712c11968994b81d12e895ee40c7be79907552141d9947b154b3f2791a06f"
+  },
+  "auto-grind/hub.js": {
+    "rules": [
+      "dynamic-code"
+    ],
+    "reason": "Invokes only the stock start and Auto click mode actions on the installed desktop panel through its existing IPC bridge.",
+    "sha256": "4b7df38d64ca2a367d9573f9364e96df05181bf5fe8bc2df23dd9102c79ba092"
+  },
+  "auto-grind/index.js": {
+    "rules": [
+      "privileged-module"
+    ],
+    "reason": "Uses Electron to locate the exact installed Hub desktop panel for the stock click mode controls.",
+    "sha256": "e7493df681f9a8caaf3b6aeb472ede7ad6e864d0be0b07a256c62a99f99cd968"
   }
 }
