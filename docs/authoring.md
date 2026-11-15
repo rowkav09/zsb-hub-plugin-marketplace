@@ -1,6 +1,6 @@
 # Build a plugin
 
-[Account Pulse](../plugins/account-pulse/README.md) is a working read-only dashboard. It uses locally cached account status and demonstrates how a manifest setting, a panel tab and an action fit together.
+[Daily reports](../plugins/daily-reports/index.js) by Gufries demonstrates how to combine cached account stats, a panel tab and periodic sampling.
 
 ## Start with two files
 

@@ -18,8 +18,14 @@ For a plugin maintained in this repository, add `plugins/<id>/` with `plugin.jso
 python3 scripts/pack.py plugins/<id> -o downloads/<id>-<version>.zip
 ```
 
-Use the Account Pulse entry in [catalog.json](catalog.json) as the example for local `source` and `download` paths. Copy the SHA-256 printed by the packer to your entry.
+Use the External Marketplace entry in [catalog.json](catalog.json) as the example for local `source` and `download` paths. Copy the SHA-256 printed by the packer to your entry.
 
 Use `defaultEnabled: false` in the manifest and catalog so users can turn on a new plugin after import. Run `npm ci`, `npm run check`, `npm run check:packages` and `npm test`. Leave account exports, logs and credentials out of the package.
+
+## Plugin security checks
+
+CI scans installable ZIPs as data. It fails on unsafe archive paths, unexpected file types, credential paths, direct external network access, dynamic code and privileged Node or Electron modules. Use the Hub context for normal account requests, local plugin data and UI.
+
+Reviewed exceptions in [reviewed-plugin-files.json](scripts/reviewed-plugin-files.json) pin a SHA-256 and name the allowed checks for an exact file. Inspect the full file before approving an exception. Passing these checks still calls for source review because Hub plugins run with the user's desktop permissions.
 
 [Authoring guide](docs/authoring.md) · [Package and signing formats](docs/distribution.md) · [Agent skill](SKILL.md)

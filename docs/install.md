@@ -20,10 +20,10 @@ Bundled plugins are available as soon as you have the app build that ships them.
 
 ## Community ZIPs
 
-1. Download [Account Pulse](../downloads/account-pulse-1.0.0.zip) or another community package. Review the source and the author's provenance before you enable a package.
+1. Download [Daily reports](../downloads/daily-reports-1.0.0.zip) or another community package. Review the source and the author's provenance before you enable a package.
 2. In **Plugins → Custom plugins**, select **Import .zip**. Choose the individual plugin ZIP. Leave it compressed.
 3. For an unsigned package you trust, enable **Settings → Allow unverified plugins**. This is an app-wide setting. Plugins run as Node code with the desktop user's permissions.
-4. Return to **Plugins** and select **Turn on**. The app opens Account Pulse, which also works with an empty account list.
+4. Return to **Plugins** and select **Turn on**. The Hub opens the plugin tab if it has one.
 
 To update a community plugin, import its next version with the same ID. The app stores settings and state by ID. To uninstall it, use **Plugins → Remove**. Its saved settings and data can still be present after removal.
 

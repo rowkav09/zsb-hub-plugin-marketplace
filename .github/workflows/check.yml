@@ -29,11 +29,11 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - name: Verify and scan every installable plugin ZIP without running it
+        run: npm run check:packages
       - name: Validate the installable catalog
         run: npm run check
-      - name: Rebuild and compare every local plugin ZIP
-        run: npm run check:packages
       - name: Exercise marketplace and plugin behavior
         run: npm test
       - name: Verify the pinned publisher catalog and bundles

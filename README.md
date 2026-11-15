@@ -29,7 +29,8 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | Community plugin | What it does | ZIP |
 | --- | --- | --- |
 | [External Marketplace](plugins/zsb-marketplace/) | Lists, installs and updates community plugins from this repository. | [Download](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip) |
-| [Account Pulse](plugins/account-pulse/) | Displays healthy, paused and stopped accounts from the farmer's cache. | [Download](downloads/account-pulse-1.0.0.zip) |
+| [Daily reports](plugins/daily-reports/) by Gufries | Tracks daily gains, clicks, downtime and plugin activity. | [Download](downloads/daily-reports-1.0.0.zip) |
+| [Terminal opener](plugins/terminal-opener/) by Gufries | Opens Genesis and Dead Hand terminals on selected accounts. Accepted offers spend account balance. | [Download](downloads/terminal-opener-1.0.0.zip) |
 
 ## Bundled plugin directory
 
@@ -77,7 +78,7 @@ module.exports = {
 
 ## Verify the catalog and plugins
 
-Use Node.js 24 and Python 3.10+. CI validates the catalog, compares packaged ZIPs with their source, exercises the install flow with fixtures, and verifies the pinned publisher signatures.
+Use Node.js 24 and Python 3.10+. CI validates the catalog, compares local ZIPs with their source, statically scans installable ZIPs for suspicious behavior, exercises the install flow with fixtures, and verifies the pinned publisher signatures. [Plugin security checks](CONTRIBUTING.md#plugin-security-checks)
 
 ```sh
 npm ci
@@ -89,4 +90,4 @@ npm run check:publisher
 
 ## License and attribution
 
-The original marketplace code, docs and example plugin use the [MIT License](LICENSE). ZSB Hub and its publisher plugins are distributed upstream. This is an independent community directory. [ZSB Hub releases](https://github.com/GothGirlZSB/zsb-hub-releases)
+The original marketplace code and docs use the [MIT License](LICENSE). Daily reports and Terminal opener are credited to Gufries. Their downloaded ZIPs did not include a license. ZSB Hub and its publisher plugins are distributed upstream. This is an independent community directory. [ZSB Hub releases](https://github.com/GothGirlZSB/zsb-hub-releases)

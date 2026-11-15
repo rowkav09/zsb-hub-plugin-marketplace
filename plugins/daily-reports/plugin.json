@@ -1,0 +1,30 @@
+{
+  "id": "daily-reports",
+  "name": "Daily reports",
+  "version": "1.0.0",
+  "description": "A report for every day, closed at midnight on this PC's own clock: what each account gained (networth, money, tokens, XP, rank), how long it was clicking, every time it went down, and what the other plugins did. Today so far and past days in the Reports tab.",
+  "minCore": "1.2.5",
+  "main": "index.js",
+  "tab": "Reports",
+  "defaultEnabled": false,
+  "settings": {
+    "accounts": {
+      "type": "accounts",
+      "label": "Accounts in the report",
+      "help": "None chosen = every account."
+    },
+    "keepDays": {
+      "type": "number",
+      "label": "Days of reports to keep",
+      "default": 30,
+      "min": 7,
+      "max": 90
+    },
+    "plugins": {
+      "type": "boolean",
+      "label": "Add what the other plugins did",
+      "default": true,
+      "help": "Opener, Converter, Armory, Trader, Games and Terminal opener, read from their own saved numbers. Missions, Pass and Rewards don't keep theirs, so they can't be added."
+    }
+  }
+}

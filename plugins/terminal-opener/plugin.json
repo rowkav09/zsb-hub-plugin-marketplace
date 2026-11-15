@@ -1,0 +1,145 @@
+{
+  "id": "terminal-opener",
+  "name": "Terminal opener",
+  "version": "1.0.0",
+  "description": "Opens Genesis or Dead Hand terminals (or both) on the accounts you choose: each offer is bought or passed by your rules (floats, patterns, rarities, exact floats, offer 5). Each account only opens its own terminals, and nothing is traded. Waiting terminals are favourited so nothing sells them first, and rule buys are favourited so they stay on the account. Other plugins leave an account alone while it opens.",
+  "minCore": "1.2.5",
+  "main": "index.js",
+  "tab": "Terminals",
+  "group": "trading",
+  "defaultEnabled": false,
+  "settings": {
+    "accounts": {
+      "type": "accounts",
+      "label": "Accounts that open"
+    },
+    "variant": {
+      "type": "choice",
+      "label": "Terminal",
+      "default": "Genesis Terminal",
+      "options": [
+        { "value": "Genesis Terminal", "label": "Genesis" },
+        { "value": "Dead Hand Terminal", "label": "Dead Hand" },
+        { "value": "both", "label": "Both" }
+      ]
+    },
+    "events": {
+      "type": "choice",
+      "label": "Which ones",
+      "default": "all",
+      "options": [
+        { "value": "all", "label": "All" },
+        { "value": "regular", "label": "Regular only" },
+        { "value": "event", "label": "Event only" }
+      ]
+    },
+    "speed": {
+      "type": "choice",
+      "label": "Speed (wait between offers)",
+      "default": "fast",
+      "options": [
+        { "value": "slow", "label": "Slow · 300 ms" },
+        { "value": "fast", "label": "Fast · 200 ms" },
+        { "value": "turbo", "label": "Turbo · 100 ms" },
+        { "value": "max", "label": "Max · no wait" }
+      ]
+    },
+    "perIp": {
+      "type": "number",
+      "label": "Accounts opening at once per IP",
+      "default": 3,
+      "min": 1,
+      "max": 10
+    },
+    "protectQueued": {
+      "type": "boolean",
+      "label": "Favourite waiting terminals until they're opened",
+      "default": true,
+      "help": "So the Converter or Opener can't sell them first. Each one is unfavourited right before it's opened."
+    },
+    "autoDecide": {
+      "type": "boolean",
+      "label": "Decide offers 1–4 by the rules (off = pass them all)",
+      "default": true
+    },
+    "pattern": {
+      "type": "boolean",
+      "label": "Buy anything with a pattern",
+      "default": false
+    },
+    "floatMode": {
+      "type": "choice",
+      "label": "Float rules",
+      "default": "simple",
+      "options": [
+        { "value": "simple", "label": "Simple — one low / high for all" },
+        { "value": "advanced", "label": "Per rarity" }
+      ]
+    },
+    "lowFloat": {
+      "type": "text",
+      "label": "Simple: buy below this float",
+      "default": "",
+      "help": "Empty = no low-float rule. Example: 0.01"
+    },
+    "highFloat": {
+      "type": "text",
+      "label": "Simple: buy above this float",
+      "default": "",
+      "help": "Empty = no high-float rule. Example: 0.99"
+    },
+    "rarities": {
+      "type": "tags",
+      "label": "Simple: always buy these rarities",
+      "placeholder": "Covert, Extraordinary…",
+      "help": "Mil-Spec Grade, Restricted, Classified, Covert or Extraordinary — Enter after each."
+    },
+    "perRarity": {
+      "type": "list",
+      "label": "Per rarity: float rules",
+      "itemLabel": "rarity rule",
+      "help": "Used when Float rules is Per rarity. Buy below Low or above High; leave one empty to skip it.",
+      "fields": {
+        "rarity": {
+          "type": "choice",
+          "label": "Rarity",
+          "default": "Covert",
+          "options": [
+            { "value": "Mil-Spec Grade", "label": "Mil-Spec Grade" },
+            { "value": "Restricted", "label": "Restricted" },
+            { "value": "Classified", "label": "Classified" },
+            { "value": "Covert", "label": "Covert" },
+            { "value": "Extraordinary", "label": "Extraordinary" }
+          ]
+        },
+        "low": { "type": "text", "label": "Buy below", "default": "" },
+        "high": { "type": "text", "label": "Buy above", "default": "" }
+      }
+    },
+    "customFloats": {
+      "type": "text",
+      "label": "Buy on these exact floats",
+      "default": "",
+      "help": "Comma separated, e.g. 0.000123, 0.999876"
+    },
+    "finalAuto": {
+      "type": "boolean",
+      "label": "Decide offer 5 (off = always discard it)",
+      "default": true
+    },
+    "finalMode": {
+      "type": "choice",
+      "label": "Offer 5",
+      "default": "criteria",
+      "options": [
+        { "value": "criteria", "label": "Buy only if a rule matches" },
+        { "value": "always", "label": "Always buy" }
+      ]
+    },
+    "keepEventBuys": {
+      "type": "boolean",
+      "label": "Keep every buy from an event terminal (forced offer-5 buys too)",
+      "default": false
+    }
+  }
+}

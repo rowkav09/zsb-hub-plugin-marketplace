@@ -7,5 +7,9 @@
     "check:packages": "python3 scripts/check-packages.py",
     "check:publisher": "node scripts/check-publisher.mjs",
     "test": "node --test tests/*.test.cjs"
+  },
+  "devDependencies": {
+    "acorn": "8.19.0",
+    "acorn-walk": "8.3.5"
   }
 }

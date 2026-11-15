@@ -9,8 +9,8 @@ const { startMarketplace } = require('../plugins/zsb-marketplace/index.js');
 const { readCatalog, fetchPackage, CATALOG_URL } = require('../plugins/zsb-marketplace/catalog.js');
 const catalog = require('../catalog.json');
 
-const pulse = catalog.plugins.find(plugin => plugin.id === 'account-pulse');
-const zip = readFileSync(path.join(__dirname, '..', pulse.download));
+const reports = catalog.plugins.find(plugin => plugin.id === 'daily-reports');
+const zip = readFileSync(path.join(__dirname, '..', reports.download));
 const version = '1.2.7-beta.1';
 
 function makeFixture(t, options = {}) {
@@ -20,11 +20,11 @@ function makeFixture(t, options = {}) {
   let installed = options.installed || [];
   const hub = {
     state: async () => ({ installed, allowUnverified: options.allowUnverified ?? true }),
-    inspectZip: () => options.manifest || require('../plugins/account-pulse/plugin.json'),
+    inspectZip: () => options.manifest || require('../plugins/daily-reports/plugin.json'),
     async importZip(data) {
       assert.deepEqual(data, zip);
       importCount++;
-      installed = [{ id: pulse.id, version: pulse.version, bundled: false }];
+      installed = [{ id: reports.id, version: reports.version, bundled: false }];
       return { ok: true, started: true };
     },
   };
@@ -50,27 +50,27 @@ test('lists GitHub ZIPs, imports the selected package once, and updates the list
   const fixture = makeFixture(t);
   await fixture.action('refresh');
   const picker = fixture.render().blocks.find(block => block.type === 'picker');
-  assert.deepEqual(picker.items.map(item => item.id), ['account-pulse']);
-  assert.match(JSON.stringify(fixture.render()), /Install Account Pulse/);
+  assert.deepEqual(picker.items.map(item => item.id), ['daily-reports', 'terminal-opener']);
+  assert.match(JSON.stringify(fixture.render()), /Install Daily reports/);
   await fixture.action('select', 'not-in-catalog');
-  const result = await fixture.action('install', pulse.id);
-  assert.match(result.message, /Account Pulse 1.0.0 imported/);
+  const result = await fixture.action('install', reports.id);
+  assert.match(result.message, /Daily reports 1.0.0 imported/);
   assert.equal(fixture.imports(), 1);
   assert.match(JSON.stringify(fixture.render()), /1.0.0 · Installed/);
-  assert.equal((await fixture.action('install', pulse.id)).ok, false);
+  assert.equal((await fixture.action('install', reports.id)).ok, false);
   assert.equal(fixture.imports(), 1);
 });
 
 test('updates an older community install and preserves newer or bundled copies', async t => {
-  const older = makeFixture(t, { installed: [{ id: pulse.id, version: '0.9.0' }] });
+  const older = makeFixture(t, { installed: [{ id: reports.id, version: '0.9.0' }] });
   await older.action('refresh');
-  assert.match(JSON.stringify(older.render()), /Update Account Pulse/);
-  await older.action('install', pulse.id);
+  assert.match(JSON.stringify(older.render()), /Update Daily reports/);
+  await older.action('install', reports.id);
   assert.equal(older.imports(), 1);
   for (const local of [{ version: '1.1.0' }, { version: '1.0.0', bundled: true }]) {
-    const fixture = makeFixture(t, { installed: [{ id: pulse.id, ...local }] });
+    const fixture = makeFixture(t, { installed: [{ id: reports.id, ...local }] });
     await fixture.action('refresh');
-    assert.equal((await fixture.action('install', pulse.id)).ok, false);
+    assert.equal((await fixture.action('install', reports.id)).ok, false);
     assert.equal(fixture.imports(), 0);
   }
 });
@@ -80,11 +80,11 @@ test('refuses unsigned imports when disabled, wrong manifests, bad hashes and in
     [{ allowUnverified: false }, /Allow unverified plugins/],
     [{ manifest: { id: 'different-plugin' } }, /disagrees.*id/],
     [{ zip: Buffer.from('altered') }, /checksum/],
-    [{ version: '1.2.6' }, /cannot be installed/],
+    [{ version: '1.2.4' }, /cannot be installed/],
   ]) {
     const fixture = makeFixture(t, options);
     await fixture.action('refresh');
-    assert.match((await fixture.action('install', pulse.id)).error, problem);
+    assert.match((await fixture.action('install', reports.id)).error, problem);
     assert.equal(fixture.imports(), 0);
   }
 });
@@ -102,24 +102,24 @@ test('serializes imports and aborts a pending download when the plugin stops', a
     },
   });
   await fixture.action('refresh');
-  const first = fixture.action('install', pulse.id);
+  const first = fixture.action('install', reports.id);
   await started;
-  assert.match((await fixture.action('install', pulse.id)).error, /current marketplace action/);
+  assert.match((await fixture.action('install', reports.id)).error, /current marketplace action/);
   fixture.cleanup();
   assert.equal((await first).ok, false);
   assert.equal(fixture.imports(), 0);
 });
 
 test('rejects conflicting listings, auto-start packages and unsupported download URLs', () => {
-  assert.throws(() => readCatalog({ ...catalog, plugins: [pulse, pulse] }), /duplicate/);
-  assert.throws(() => readCatalog({ ...catalog, plugins: [{ ...pulse, defaultEnabled: true }] }), /defaultEnabled/);
-  assert.throws(() => readCatalog({ ...catalog, plugins: [{ ...pulse, download: 'https://example.com/plugin.zip' }] }), /versioned GitHub Release/);
+  assert.throws(() => readCatalog({ ...catalog, plugins: [reports, reports] }), /duplicate/);
+  assert.throws(() => readCatalog({ ...catalog, plugins: [{ ...reports, defaultEnabled: true }] }), /defaultEnabled/);
+  assert.throws(() => readCatalog({ ...catalog, plugins: [{ ...reports, download: 'https://example.com/plugin.zip' }] }), /versioned GitHub Release/);
 });
 
 test('allows GitHub release asset redirects and refuses redirects outside GitHub', async () => {
   const release = 'https://github.com/example/example/releases/download/v1.0.0/package.zip';
   const allowed = 'https://release-assets.githubusercontent.com/path';
-  const entry = { ...pulse, download: release, sha256: createHash('sha256').update(zip).digest('hex') };
+  const entry = { ...reports, download: release, sha256: createHash('sha256').update(zip).digest('hex') };
   const calls = [];
   const good = async url => {
     calls.push(url);

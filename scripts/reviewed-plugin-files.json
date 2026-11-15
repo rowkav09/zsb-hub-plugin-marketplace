@@ -1,0 +1,33 @@
+{
+  "zsb-marketplace/catalog.js": {
+    "rules": [
+      "external-url"
+    ],
+    "reason": "Catalog and release assets are limited to the configured GitHub repo and allowed GitHub hosts.",
+    "sha256": "5a8b172141410a2f34404acfd078bb7ac8833ff1862719ec4faeb0d88cc1e1b7"
+  },
+  "zsb-marketplace/hub.js": {
+    "rules": [
+      "dynamic-code",
+      "dynamic-module"
+    ],
+    "reason": "Uses the exact Hub desktop panel bridge and the installed Hub ZIP parser.",
+    "sha256": "0d98305901e96fb5e1497a3c1a92cbb4312fafc662c5cf11ccf62d5ea699c985"
+  },
+  "zsb-marketplace/index.js": {
+    "rules": [
+      "privileged-module",
+      "runtime-access",
+      "external-network"
+    ],
+    "reason": "Uses Electron for the Hub panel bridge and fetch for the validated catalog and ZIP downloads.",
+    "sha256": "15d3f14c60917334893e5daea243f836d1a2b9e9d52e852ebcf7f1472deccd25"
+  },
+  "daily-reports/index.js": {
+    "rules": [
+      "privileged-module"
+    ],
+    "reason": "Reads saved counters from a fixed list of sibling plugin JSON files.",
+    "sha256": "03b8b5b24c13f0650692ee69303f311b7e4456ef46dd19b869cda7539bdba49d"
+  }
+}

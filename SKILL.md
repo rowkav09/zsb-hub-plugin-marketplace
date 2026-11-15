@@ -10,7 +10,7 @@ The framework reference comes from the installed Linux build `1.2.7-beta.1`. Con
 ## Choose the starting point
 
 - Find an existing plugin in [catalog.json](catalog.json). The `version` field for a bundled entry comes from the inspected app. `publisher.version` comes from the separately signed publisher catalog.
-- Build one with the [authoring guide](docs/authoring.md) and the working [Account Pulse entry point](plugins/account-pulse/index.js) and [manifest](plugins/account-pulse/plugin.json).
+- Build one with the [authoring guide](docs/authoring.md) and the working [Daily reports entry point](plugins/daily-reports/index.js) and [manifest](plugins/daily-reports/plugin.json).
 - Look up lifecycle, settings types, panel blocks, scheduling and cross-plugin coordination in the [framework reference](docs/framework.md).
 - Diagnose import and signing through the [install guide](docs/install.md) and [distribution reference](docs/distribution.md).
 - For a listing, follow [CONTRIBUTING.md](CONTRIBUTING.md). Match the author’s source version to the ZIP and distinguish verified behavior from author-reported compatibility.
