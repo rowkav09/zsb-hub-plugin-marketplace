@@ -1,8 +1,8 @@
 {
   "id": "auto-skin-collection",
   "name": "Auto Skin Collection Completer",
-  "version": "1.0.0",
-  "description": "Submit eligible skins and claim collection rewards across selected farm accounts, with optional budgeted case buying and opening.",
+  "version": "1.1.0",
+  "description": "Submit eligible skins and claim collection rewards across selected farm accounts, with optional case-shop purchases and Armory credit redemptions.",
   "main": "index.js",
   "minCore": "1.2.8",
   "group": "farming",
@@ -12,6 +12,13 @@
   "packageShared": ["farm-batch.js"],
   "settings": {
     "accounts": { "type": "accounts", "label": "Farm accounts" },
+    "targets": {
+      "type": "choice", "label": "Collections to complete", "default": "named",
+      "options": [
+        { "value": "named", "label": "Only named collections" },
+        { "value": "purchasable", "label": "All purchasable collections" }
+      ]
+    },
     "collections": { "type": "tags", "label": "Exact collection names", "placeholder": "Prisma Case", "help": "Use names shown on the site's Skin Collection page." },
     "maxSkin": { "type": "number", "label": "Maximum value of a submitted skin ($)", "default": 0, "min": 0 },
     "submissions": { "type": "number", "label": "Maximum submissions per account", "default": 25, "min": 1, "max": 80 },
@@ -24,6 +31,9 @@
         { "value": "buy", "label": "Also buy and open within budget" }
       ]
     },
+    "armory": { "type": "boolean", "label": "Include Armory redemptions", "default": false,
+      "help": "Spend Armory credits on eligible collections. Open Armory cases individually." },
+    "armoryCredits": { "type": "number", "label": "Maximum Armory credits per account per run", "default": 0, "min": 0, "max": 1000 },
     "opens": { "type": "number", "label": "Maximum cases opened per account per run", "default": 10, "min": 1, "max": 100 },
     "spend": { "type": "number", "label": "Maximum case spend per account per run ($)", "default": 0, "min": 0 },
     "reserve": { "type": "number", "label": "Cash reserve per account ($)", "default": 0, "min": 0 },

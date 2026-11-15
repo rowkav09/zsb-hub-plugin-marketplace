@@ -3,18 +3,24 @@
 const { availablePrice, bounded, createBatch, idOk, money, notFavorite, Unconfirmed } = require('./farm-batch');
 
 const COLLECTION = '/api/skinCollection';
+const ARMORY = '/api/armory';
+const ARMORY_BUNDLE = 10;
 const fold = value => value.trim().toLowerCase();
 const baseName = value => fold(value.replace(/^StatTrak(?:™)?\s+|^Souvenir\s+/i, ''));
 
 function limits(api) {
   const names = (api.get('collections') || []).map(fold);
-  if (!names.length) throw Error('Enter at least one exact collection name.');
+  const all = api.get('targets') === 'purchasable';
+  if (!all && !names.length) throw Error('Enter at least one exact collection name.');
+  const useArmory = api.get('armory') === true;
+  const credits = bounded(api.get('armoryCredits'), 0, 1000);
+  if (useArmory && !credits) throw Error('Set a positive Armory credit budget first.');
   const maxSkin = api.get('maxSkin'), spend = api.get('spend'), reserve = api.get('reserve');
   if (![maxSkin, spend, reserve].every(value => Number.isFinite(value) && value >= 0)) throw Error('Enter valid cost limits.');
   const source = api.get('source');
   if (source === 'buy' && spend <= 0) throw Error('Set a positive purchase budget first.');
   return {
-    names, maxSkin, source, spend, reserve, redeem: api.get('redeem') === true,
+    all, names, useArmory, credits, maxSkin, source, spend, reserve, redeem: api.get('redeem') === true,
     submissions: bounded(api.get('submissions'), 1, 80, 25), opens: bounded(api.get('opens'), 1, 100, 10),
   };
 }
@@ -47,7 +53,7 @@ async function candidates(api, id, route, group, maxSkin) {
   return items.map(item => ({ id: item._id, price: item.price })).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-async function shop(api, id, route) {
+async function shop(api, id, route, includeArmory) {
   const home = await api.request(id, route, '/');
   const build = /"buildId"\s*:\s*"([A-Za-z0-9_-]+)"/.exec(home?.body || '')?.[1];
   if (home?.kind !== 'ok' || !build) throw Error('Shop build data unavailable.');
@@ -57,10 +63,32 @@ async function shop(api, id, route) {
     const raw = body?.pageProps?.cases;
     const list = typeof raw === 'string' ? JSON.parse(raw) : raw;
     if (!Array.isArray(list)) throw Error('Shop list unavailable.');
-    for (const item of list) if (idOk(item?._id) && typeof item.name === 'string') items.set(item.name, { ...item, type });
+    for (const item of list) if (idOk(item?._id) && typeof item.name === 'string') items.set(fold(item.name), { ...item, type });
+  }
+  if (includeArmory) {
+    const body = await api.read(id, route, '/_next/data/' + build + '/en/armory.json');
+    const raw = body?.pageProps?.armoryRewards;
+    const rewards = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!Array.isArray(rewards)) throw Error('Armory rewards unavailable.');
+    for (const reward of rewards) {
+      if (!idOk(reward?.id) || typeof reward.name !== 'string'
+        || !['case', 'collectionCase'].includes(reward.type)
+        || !Number.isSafeInteger(reward.creditPrice) || reward.creditPrice < 1) continue;
+      const key = fold(reward.name), item = items.get(key);
+      if (item && (item._id !== reward.id || item.type !== reward.type)) continue;
+      items.set(key, { ...item, _id: reward.id, type: reward.type, creditPrice: reward.creditPrice });
+    }
   }
   return items;
 }
+
+async function armoryCredits(api, id, route) {
+  const { credits } = await api.read(id, route, ARMORY);
+  if (!Number.isSafeInteger(credits) || credits < 0) throw Error('Armory credit balance unavailable.');
+  return credits;
+}
+
+const listedForCash = item => item && !item.isNonBuyable && Number.isFinite(item.price) && item.price > 0;
 
 async function stock(api, id, route) {
   const items = await api.read(id, route, '/api/cases');
@@ -74,12 +102,17 @@ function inventoryRoom(profile) {
   return Math.max(0, profile.inventorySize - profile.inventoryCount);
 }
 
-function openingPlan(item, held, allowed, buyBudget, canBuy) {
+function openingPlan(item, held, allowed, cashBudget, creditBudget, canBuy) {
   if (!item || !allowed) return null;
   const owned = Math.min(allowed, held);
-  const buy = canBuy && !item.isNonBuyable && Number.isFinite(item.price) && item.price > 0
-    ? Math.min(allowed - owned, Math.floor(buyBudget / item.price)) : 0;
-  return owned + buy ? { caseId: item._id, type: item.type, owned, buy, price: buy ? item.price : 0 } : null;
+  const buy = canBuy && listedForCash(item)
+    ? Math.min(allowed - owned, Math.floor(cashBudget / item.price)) : 0;
+  const credits = !held && !buy && item.creditPrice && item.creditPrice <= creditBudget ? item.creditPrice : 0;
+  const opens = owned + buy + (credits ? Math.min(allowed, ARMORY_BUNDLE) : 0);
+  return opens ? {
+    caseId: item._id, type: item.type, opens, buy, price: buy ? item.price : 0, credits,
+    single: !!item.creditPrice,
+  } : null;
 }
 
 async function scanAccount(api, account, rules, plan) {
@@ -88,11 +121,19 @@ async function scanAccount(api, account, rules, plan) {
   const list = await api.read(id, route, COLLECTION + '?all=true');
   if (!Array.isArray(list?.skinCollections)) throw Error('Collection list unavailable.');
   const catalog = list.skinCollections.filter(entry => typeof entry?.name === 'string');
-  for (const configured of rules.names) {
-    if (!catalog.some(entry => fold(entry.name) === configured)) plan.notes.push([name, 'Unknown collection: ' + configured]);
+  if (!rules.all) {
+    for (const configured of rules.names) {
+      if (!catalog.some(entry => fold(entry.name) === configured)) plan.notes.push([name, 'Unknown collection: ' + configured]);
+    }
   }
-  let supply, openings = 0, spend = 0, submitted = 0;
-  for (const entry of catalog.filter(entry => rules.names.includes(fold(entry.name)))) {
+  const canOpen = rules.source !== 'inventory' || rules.useArmory;
+  const items = rules.all || canOpen ? await shop(api, id, route, canOpen) : new Map();
+  const targets = catalog.filter(entry => {
+    const key = fold(entry.name), item = items.get(key);
+    return rules.all ? listedForCash(item) || (rules.useArmory && !!item?.creditPrice) : rules.names.includes(key);
+  });
+  let supply, openings = 0, spend = 0, credits = 0, submitted = 0;
+  for (const entry of targets) {
     const current = await progress(api, id, route, entry.name);
     const missing = current.groups.filter(group => !current.completed.has(group._id));
     const submit = [], rows = [];
@@ -109,27 +150,31 @@ async function scanAccount(api, account, rules, plan) {
     const claim = rules.redeem && submit.length === missing.length && !current.rewards.has(entry.name);
     if (claim) rows.push([name, entry.name, 'Claim completed reward', '—']);
     let open = null;
-    if (rules.source !== 'inventory' && missing.length > submit.length && openings < rules.opens) {
+    const item = items.get(fold(entry.name));
+    if (item && (rules.source !== 'inventory' || (rules.useArmory && item.creditPrice)) && missing.length > submit.length && openings < rules.opens) {
       try {
         if (!supply) {
-          const shopItems = await shop(api, id, route);
           const owned = await stock(api, id, route);
           const me = await api.read(id, route, '/api/me');
           supply = {
-            shopItems, owned, room: inventoryRoom(me), rank: me?.rank?.id ?? me?.rank,
+            owned, room: inventoryRoom(me), rank: me?.rank?.id ?? me?.rank,
             cash: Number.isFinite(me?.money) ? Math.max(0, me.money - rules.reserve) : 0,
+            credits: rules.useArmory ? await armoryCredits(api, id, route) : 0,
           };
         }
-        const item = supply.shopItems.get(entry.name);
         const allowed = Math.min(rules.opens - openings, Math.max(0, supply.room - openings));
-        const budget = Math.max(0, Math.min(rules.spend, supply.cash) - spend);
+        const cashBudget = Math.max(0, Math.min(rules.spend, supply.cash) - spend);
+        const creditBudget = Math.max(0, Math.min(rules.credits, supply.credits) - credits);
         const canBuy = rules.source === 'buy' && Number.isFinite(supply.rank)
-          && Number.isFinite(item?.rankNeeded) && supply.rank >= item.rankNeeded;
-        open = openingPlan(item, supply.owned.get(item?._id) || 0, allowed, budget, canBuy);
+          && Number.isFinite(item.rankNeeded) && supply.rank >= item.rankNeeded;
+        open = openingPlan(item, supply.owned.get(item._id) || 0, allowed, cashBudget, creditBudget, canBuy);
         if (open) {
-          openings += open.owned + open.buy;
+          openings += open.opens;
           spend += open.buy * open.price;
-          rows.push([name, entry.name, 'Open ' + (open.owned + open.buy) + ' · buy ' + open.buy, money(open.buy * open.price)]);
+          credits += open.credits;
+          const detail = 'Open ' + open.opens + (open.single ? ' one at a time' : '');
+          if (open.credits) rows.push([name, entry.name, detail + ' · redeem 1 Armory bundle of 10', open.credits + ' credits']);
+          else rows.push([name, entry.name, detail + ' · buy ' + open.buy, money(open.buy * open.price)]);
         }
       } catch (error) {
         plan.notes.push([name, entry.name + ' · ' + error.message]);
@@ -175,14 +220,26 @@ async function openCases(api, job, rules) {
   const readStock = async () => (await stock(api, id, route)).get(open.caseId) || 0;
   let held = await readStock();
   const me = await api.read(id, route, '/api/me');
-  const planned = open.owned + open.buy;
+  const planned = open.opens;
   if (inventoryRoom(me) < planned) return 'Inventory room changed · openings skipped.';
+  if (open.credits && !held) {
+    const item = (await shop(api, id, route, true)).get(fold(job.name));
+    const balance = await armoryCredits(api, id, route);
+    if (item?._id !== open.caseId || item.type !== open.type || item.creditPrice !== open.credits
+      || balance < open.credits) return 'Armory price or balance changed · openings skipped.';
+    if (await api.write(id, route, ARMORY, 'PATCH', { id: open.caseId, type: open.type, amount: 1 }) === null) {
+      return 'The Armory refused the redemption.';
+    }
+    held = await readBack(readStock, count => count === ARMORY_BUNDLE, 'Armory redemption unconfirmed for ' + job.name + '. Check case stock.');
+    await readBack(() => armoryCredits(api, id, route), value => value === balance - open.credits,
+      'Armory credit balance unconfirmed for ' + job.name + '. Check the credit balance.');
+  }
   if (open.buy) {
-    const item = (await shop(api, id, route)).get(job.name);
+    const item = (await shop(api, id, route, false)).get(fold(job.name));
     const cost = open.buy * item?.price;
     const rank = me?.rank?.id ?? me?.rank;
-    if (item?._id !== open.caseId || item.type !== open.type || item.isNonBuyable || !Number.isFinite(cost)
-      || item.price <= 0 || item.price > open.price || !Number.isFinite(me?.money) || me.money - cost < rules.reserve
+    if (item?._id !== open.caseId || item.type !== open.type || !listedForCash(item) || !Number.isFinite(cost)
+      || item.price > open.price || !Number.isFinite(me?.money) || me.money - cost < rules.reserve
       || !Number.isFinite(rank) || !Number.isFinite(item.rankNeeded) || rank < item.rankNeeded) return 'Shop quote or balance changed · openings skipped.';
     if (await api.write(id, route, '/api/cases', 'POST', { id: open.caseId, type: open.type, amount: open.buy }) === null) {
       return 'The site refused the case purchase.';
@@ -191,7 +248,7 @@ async function openCases(api, job, rules) {
   }
   let opened = 0;
   const want = Math.min(planned, held);
-  const perCall = bounded(me.caseOpenCount, 1, 100, 1);
+  const perCall = open.single ? 1 : bounded(me.caseOpenCount, 1, 100, 1);
   while (opened < want) {
     const count = Math.min(perCall, want - opened);
     const result = await api.write(id, route, '/api/open/' + open.type, 'POST', {
@@ -239,7 +296,7 @@ module.exports = {
   start(ctx) {
     stop = createBatch(ctx, {
       title: 'Auto Skin Collection Completer', tab: 'Skin Collections',
-      keys: ['runMode', 'on', 'accounts', 'collections', 'maxSkin', 'submissions', 'redeem', 'source', 'opens', 'spend', 'reserve', 'minutes'],
+      keys: ['runMode', 'on', 'accounts', 'targets', 'collections', 'maxSkin', 'submissions', 'redeem', 'source', 'armory', 'armoryCredits', 'opens', 'spend', 'reserve', 'minutes'],
       columns: ['Account', 'Collection', 'Operation', 'Maximum value'], resultColumns: ['Account', 'Collection'],
       applyLabel: 'Run previewed collection jobs',
       confirm: plan => 'Run ' + plan.jobs.length + ' collection jobs? Submissions consume skins. Purchases and openings follow the preview.',

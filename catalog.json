@@ -247,14 +247,14 @@
       "overview": "Builds for case clicking, click income, larger openings or a custom selection of skill IDs. Set cash and skill point budgets for each account.",
       "integration": "Uses each healthy account’s routed requests and busy markers. Rechecks prerequisites and verifies skill ownership after every purchase.",
       "operation": "Read-only preview and confirmed purchases",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
       "source": "plugins/skillmap-presets/",
-      "download": "downloads/skillmap-presets-1.0.0.zip",
-      "sha256": "da9ed0efc6732f4c8e4279685cb9bfd7c886568fcf6951de76cc92941eb8badb"
+      "download": "downloads/skillmap-presets-1.0.1.zip",
+      "sha256": "db4e42f609a3ae3191a368731d6a341a182567903711dee16fac3626f7251041"
     },
     {
       "id": "auto-forge",
@@ -279,18 +279,18 @@
       "name": "Auto Skin Collection Completer",
       "kind": "community",
       "category": "Farming",
-      "summary": "Finish selected skin collections on farm accounts.",
-      "overview": "Plan skin submissions and reward claims, and optionally buy or open cases within your caps.",
+      "summary": "Finish named collections or work through everything available from the case shop and Armory.",
+      "overview": "Plan submissions and rewards, with separate budgets for cash and optional Armory credits. Opens Armory cases individually.",
       "integration": "Reads collection progress and inventory on each Hub route. Confirms submissions and case-stock changes.",
       "operation": "Manual preview and optional scheduled runs",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
       "source": "plugins/auto-skin-collection/",
-      "download": "downloads/auto-skin-collection-1.0.0.zip",
-      "sha256": "6973685708c9d5c7e4ce6cdb8fb4368db6f1df3412ebb8196b2c5bb7e72e4eba"
+      "download": "downloads/auto-skin-collection-1.1.0.zip",
+      "sha256": "86ffe687da9b10d0226864c3cfc6a339440bdb4540ca611c72fa92e9502a07c0"
     },
     {
       "id": "auto-trade-favourites",

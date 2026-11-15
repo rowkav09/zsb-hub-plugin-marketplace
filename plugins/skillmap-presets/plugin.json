@@ -1,7 +1,7 @@
 {
   "id": "skillmap-presets",
   "name": "Skillmap Presets",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Compare and apply skill builds for case farming, money clicking and opening across selected ZSB Hub accounts.",
   "minCore": "1.2.8",
   "main": "index.js",

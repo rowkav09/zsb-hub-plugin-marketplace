@@ -199,7 +199,7 @@ test('Skillmap Presets fits whole prerequisite chains within the account budget 
   assert.throws(() => parseMap('<html>Not a skillmap</html>', MAPS.a), /data unavailable/);
 });
 
-test('Skillmap Presets skips busy accounts and only buys missing approved skills', async () => {
+test('Skillmap Presets previews busy accounts and only buys missing approved skills on available accounts', async () => {
   const owned = new Set();
   const f = farm(skills, skillManifest, { preset: 'custom', customIds: 'a2, a3', cashReserve: 20 }, (_, path, opts) => {
     if (path === '/api/me') return { kind: 'ok', json: profile };
@@ -211,7 +211,7 @@ test('Skillmap Presets skips busy accounts and only buys missing approved skills
   });
   f.busy.add('second');
   await f.action('preview');
-  assert.deepEqual(f.preview().map(row => row[2]), ['a1 (a1)', 'a2 (a2)', 'a3 (a3)']);
+  assert.deepEqual(f.preview().map(row => row[2]), ['a1 (a1)', 'a2 (a2)', 'a3 (a3)', 'a1 (a1)', 'a2 (a2)', 'a3 (a3)']);
   assert.equal(f.posts().length, 0);
   const token = f.button('apply').arg;
   owned.add('a1');

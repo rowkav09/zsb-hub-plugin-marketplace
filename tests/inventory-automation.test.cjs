@@ -148,6 +148,7 @@ test('Collection buying is capped and openings are verified without auto-sell', 
     if (url.pathname === '/') return { kind: 'ok', body: '{"buildId":"fixture"}' };
     if (url.pathname.includes('/cases/cases.json')) return ok({ pageProps: { cases: JSON.stringify([item]) } });
     if (url.pathname.includes('/cases/collections.json')) return ok({ pageProps: { cases: '[]' } });
+    if (url.pathname.endsWith('/armory.json')) return ok({ pageProps: { armoryRewards: '[]' } });
     if (url.searchParams.get('all') === 'true') return ok({ skinCollections: [{ name }] });
     if (url.pathname === '/api/skinCollection') return ok({ skinCollectionSkingroups: [group], userSkinCollection: null });
     if (url.pathname === '/api/me') return ok({ money: 20, rank: { id: 5 }, caseOpenCount: 2, inventorySize: 20, inventoryCount: 10 });
@@ -165,6 +166,59 @@ test('Collection buying is capped and openings are verified without auto-sell', 
   assert.equal((await f.action('apply', f.approval().arg)).ok, true);
   assert.deepEqual(f.posts.map(post => post.body.amount ?? post.body.count), [2, '2', '1']);
   assert.equal(held, 0);
+});
+
+test('All purchasable collections uses a separate Armory budget and opens Armory cases serially', async t => {
+  const group = { _id: oid('a'), name: 'Missing skin' };
+  const standard = { _id: oid('b'), name: 'Cash Case', price: 2, rankNeeded: 1 };
+  const armory = { id: oid('c'), name: 'Armory Collection', type: 'collectionCase', creditPrice: 4 };
+  const held = new Map();
+  let credits = 4, mustReadStock = false;
+  const f = hub(t, 'auto-skin-collection', {
+    targets: 'purchasable', source: 'buy', spend: 4, armory: true, armoryCredits: 4, opens: 5,
+  }, (_, url, opts) => {
+    if (url.pathname === '/') return { kind: 'ok', body: '{"buildId":"fixture"}' };
+    if (url.pathname.endsWith('/cases/cases.json')) return ok({ pageProps: { cases: [standard] } });
+    if (url.pathname.endsWith('/cases/collections.json')) return ok({ pageProps: { cases: [] } });
+    if (url.pathname.endsWith('/armory.json')) return ok({ pageProps: { armoryRewards: [armory] } });
+    if (url.searchParams.has('all')) return ok({ skinCollections: [standard, armory, { name: 'Retired Case' }] });
+    if (url.pathname === '/api/skinCollection') {
+      assert.notEqual(url.searchParams.get('collection'), 'Retired Case');
+      return ok({ skinCollectionSkingroups: [group], userSkinCollection: null });
+    }
+    if (url.pathname === '/api/me') return ok({ money: 20, rank: 5, caseOpenCount: 4, inventorySize: 20, inventoryCount: 0 });
+    if (url.pathname === '/api/armory') {
+      if (opts.method === 'PATCH') {
+        assert.deepEqual(opts.body, { id: armory.id, type: 'collectionCase', amount: 1 });
+        credits -= 4;
+        held.set(armory.id, 10);
+      }
+      return ok({ credits });
+    }
+    if (url.pathname === '/api/cases') {
+      if (opts.method === 'POST') {
+        held.set(opts.body.id, opts.body.amount);
+        return ok({});
+      }
+      mustReadStock = false;
+      return ok([...held].map(([_id, amount]) => ({ _id, amount })));
+    }
+    assert.match(url.pathname, /^\/api\/open\/(case|collectionCase)$/);
+    assert.equal(mustReadStock, false);
+    mustReadStock = true;
+    held.set(opts.body.id, held.get(opts.body.id) - Number(opts.body.count));
+    return ok([]);
+  });
+  await f.action('preview');
+  assert.deepEqual(f.preview().map(row => [row[1], row[3]]), [[standard.name, '$4'], [armory.name, '4 credits']]);
+  assert.equal(f.posts.length, 0);
+  const result = await f.action('apply', f.approval().arg);
+  assert.equal(result.ok, true, result.error);
+  assert.deepEqual(f.posts.filter(post => post.url.startsWith('/api/open')).map(post => post.body.count), ['2', '1', '1', '1']);
+  assert.equal(held.get(armory.id), 7);
+  await f.action('preview');
+  assert(f.preview().some(row => row[1] === armory.name && row[2].startsWith('Open 3 one at a time')));
+  assert.equal(f.posts.filter(post => post.method === 'PATCH').length, 1);
 });
 
 test('Favourites trades send exact approved IDs to the selected account and verify receipt', async t => {

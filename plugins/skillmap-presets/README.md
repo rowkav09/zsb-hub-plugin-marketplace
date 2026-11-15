@@ -15,6 +15,6 @@ Buy skills across selected farm accounts from the **Farming → Skillmap Presets
 
 Skillmap Presets adds skills to existing builds. **Fit to each account** buys affordable branches as prerequisites and rank allow. Turn it off to require each account to afford its full build. Before applying, the plugin rechecks the approved purchases and verifies ownership after each request. The preview expires after ten minutes or when settings change. If a purchase cannot be confirmed, the batch stops.
 
-The plugin uses each clicking account's Hub route and coordinates with plugins that mark an account as busy. Preset IDs are based on Jamie's [Auto Skill Pro builds](https://github.com/rowkav09/CCO-scripts-library/blob/main/scripts/Utilities/auto-skillmap.user.js).
+The plugin uses each clicking account's Hub route and can preview busy accounts. On apply it asks the current plugin to release the account and waits up to 20 seconds. If the account is still busy, it skips that account and reports the reason. Preset IDs are based on Jamie's [Auto Skill Pro builds](https://github.com/rowkav09/CCO-scripts-library/blob/main/scripts/Utilities/auto-skillmap.user.js).
 
-[Download Skillmap Presets](../../downloads/skillmap-presets-1.0.0.zip)
+[Download Skillmap Presets](../../downloads/skillmap-presets-1.0.1.zip)

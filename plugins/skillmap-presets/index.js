@@ -4,6 +4,7 @@ const { randomUUID } = require('node:crypto');
 const { MAPS, parseMap, presetIds, purchasePlan, snapshot } = require('./planning');
 
 const TTL = 10 * 60_000;
+const HANDOFF_MS = 20_000;
 const money = amount => '$' + amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 function start(ctx) {
@@ -19,9 +20,29 @@ function start(ctx) {
   const blocker = id => {
     if (!selected(id)) return 'Account selection changed';
     if (!ctx.accounts.get(id)?.healthy) return 'Account is not clicking normally';
-    if (ctx.accounts.busy(id) || ctx.accounts.wanted(id)) return 'Another plugin is using this account';
     return '';
   };
+  const conflict = id => ctx.accounts.busy(id) || ctx.accounts.wanted(id);
+  const conflictText = busy => busy.what ? 'Account in use · ' + busy.what : 'Another plugin is using this account';
+
+  async function acquire(id) {
+    if (conflict(id) && ctx.accounts.want) {
+      ctx.accounts.want(id, 'Skillmap Presets');
+      try {
+        const deadline = Date.now() + HANDOFF_MS;
+        while (active() && !blocker(id) && conflict(id) && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
+      } finally {
+        ctx.accounts.want(id, null);
+      }
+    }
+    const busy = conflict(id);
+    const reason = !active() ? 'Stopped' : blocker(id) || (busy && conflictText(busy));
+    if (reason) return reason;
+    ctx.accounts.setBusy(id, 'Skillmap Presets');
+    return '';
+  }
 
   function readRules() {
     return {
@@ -74,7 +95,9 @@ function start(ctx) {
         const limits = [plan.blocked && 'rank', plan.limited && 'cash or points'].filter(Boolean).join(', ');
         const status = plan.steps.length ? (plan.complete ? 'Ready' : plan.pending + ' goals deferred · ' + limits)
           : plan.complete ? 'Already owned' : 'Waiting on ' + limits;
-        rows.push({ account, ...plan, status });
+        const busy = conflict(account.id);
+        rows.push({ account, ...plan, status: busy && plan.steps.length
+          ? status + ' · ' + conflictText(busy) : status });
       } catch (error) {
         rows.push({ account, status: error.message, total: 0, steps: [] });
       }
@@ -99,13 +122,13 @@ function start(ctx) {
       if (!row.steps.length) continue;
       const aid = row.account.id;
       const name = row.account.name || aid;
-      const reason = blocker(aid);
+      progress = 'Waiting for ' + name + '…';
+      const reason = await acquire(aid);
       if (reason) {
         last.push([name, 0, reason]);
         continue;
       }
 
-      ctx.accounts.setBusy(aid, 'Skillmap Presets');
       let purchased = 0;
       let detail = 'Complete';
       try {
@@ -121,7 +144,8 @@ function start(ctx) {
         if (!fresh.steps.length) detail = 'Already owned';
         for (const skill of fresh.steps) {
           if (!active()) { detail = 'Stopped'; break; }
-          const waiting = blocker(aid);
+          const busy = conflict(aid);
+          const waiting = blocker(aid) || (busy && conflictText(busy));
           if (waiting) { detail = waiting; break; }
           progress = 'Applying skills on ' + name + '…';
           // Never retry a purchase. Check the account's map before continuing.
