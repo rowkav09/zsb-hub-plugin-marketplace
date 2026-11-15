@@ -19,7 +19,8 @@ function hub(t, id, options, transport) {
   const plugin = require(path.join(dir, 'index.js'));
   const { settings } = require(path.join(dir, 'plugin.json'));
   const accounts = (options.accountIds || ['a']).map(id => ({ id, name: id.toUpperCase(), healthy: true }));
-  const values = { runMode: 'live', on: false, ...Object.fromEntries(Object.entries(settings).map(([k, v]) => [k, v.default])), ...options };
+  const values = { runMode: 'live', on: false, ...Object.fromEntries(Object.entries(settings).map(([k, v]) => [k, v.default])),
+    ...(options.collections ? { targets: 'named' } : {}), ...options };
   const actions = new Map(), locks = new Set(), posts = [];
   let draw, onChange, callback, data = {};
   const routes = new Map(accounts.map(a => [a.id, 'route-' + a.id]));
@@ -42,6 +43,8 @@ function hub(t, id, options, transport) {
     power: { practice: () => values.runMode !== 'live', live: () => values.runMode === 'live' && values.on },
     panel: { action: (name, fn) => actions.set(name, fn), tab: (_, render) => { draw = render; } },
     every: (_, fn) => { callback = fn; },
+    on() {},
+    sleep: () => new Promise(() => {}),
     log() {},
     socket: options.socket,
     request(acct, url, opts) {
@@ -54,10 +57,11 @@ function hub(t, id, options, transport) {
     },
   };
   plugin.start(ctx);
+  if (id === 'auto-skin-collection') actions.get('show-collection-run')();
   t.after(() => { plugin.stop(); rmSync(dir, { force: true, recursive: true }); });
   const action = (name, args) => actions.get(name)(args);
   return {
-    action, posts, locks, routes, callback, change: ctx.settings.set, data: () => data,
+    action, posts, locks, routes, callback, change: ctx.settings.set, data: () => data, blocks: () => draw().blocks,
     preview: () => draw().blocks.find(block => block.type === 'table')?.rows,
     approval: () => draw().blocks.filter(b => b.type === 'buttons').flatMap(b => b.items).find(b => b.action === 'apply'),
   };
@@ -116,7 +120,7 @@ test('Unconfirmed storage deposits stop the batch and require acknowledgement', 
 test('Collection completer submits approved skin groups and claims a verified reward', async t => {
   const name = 'Fixture Case', first = { _id: oid('a'), name: 'First skin' }, second = { _id: oid('b'), name: 'Second skin' };
   const collection = { submittedSkingroupIds: [], redeemedCollectionRewards: [] };
-  const f = hub(t, 'auto-skin-collection', { collections: [name], maxSkin: 20 }, (_, url, opts) => {
+  const f = hub(t, 'auto-skin-collection', { collections: [name], maxSkin: 20, runMode: 'practice', on: true }, (_, url, opts) => {
     if (url.searchParams.get('all') === 'true') return ok({ skinCollections: [{ name }] });
     if (opts.method === 'POST') {
       collection.submittedSkingroupIds.push(opts.body.id);
@@ -139,6 +143,57 @@ test('Collection completer submits approved skin groups and claims a verified re
   assert.equal(f.posts.length, 0);
   assert.equal((await f.action('apply', f.approval().arg)).ok, true);
   assert.deepEqual(f.posts.map(post => post.body), [{ id: first._id, collection: name }, { id: second._id, collection: name }, { collectionName: name }]);
+  assert.equal(f.callback, undefined, 'legacy scheduled settings cannot run the completer');
+  assert.equal(f.approval(), undefined, 'the completed preview cannot run again');
+});
+
+test('Collection scans include favourited duplicates on later pages and recheck before submitting', async t => {
+  const name = 'Fixture Case';
+  const blocked = { _id: oid('a'), name: 'Protected skin' };
+  const changed = { _id: oid('b'), name: 'Changed skin' };
+  const unmarked = { _id: oid('c'), name: 'Unknown favourite state' };
+  let toggled = false;
+  const f = hub(t, 'auto-skin-collection', { collections: [name], maxSkin: 20 }, (_, url) => {
+    if (url.searchParams.has('all')) return ok({ skinCollections: [{ name }] });
+    if (url.pathname === '/api/skinCollection') return ok({ skinCollectionSkingroups: [blocked, changed, unmarked], userSkinCollection: null });
+    assert(!url.searchParams.has('favoriteSkinsFilter'), 'a group scan must see every copy');
+    switch (url.searchParams.get('skingroupId')) {
+      case blocked._id:
+        return ok({ pages: 2, skins: url.searchParams.get('page') === '1'
+          ? [skin('d', blocked.name)] : [skin('e', blocked.name, { isFavorite: true })] });
+      case changed._id: return inventory([skin('f', changed.name, { isFavorite: toggled })]);
+      case unmarked._id: return inventory([skin('1', unmarked.name, { isFavorite: undefined })]);
+      default: assert.fail('Unexpected group ' + url.searchParams.get('skingroupId'));
+    }
+  });
+  assert.equal((await f.action('preview')).ok, true);
+  assert.deepEqual(f.preview().map(row => row[2]), ['Submit Changed skin · site chooses 1 of 1']);
+  toggled = true;
+  assert.equal((await f.action('apply', f.approval().arg)).ok, true);
+  assert.equal(f.posts.length, 0);
+});
+
+test('Collection progress shows all collection cards and all Hub accounts independently of run selection', async t => {
+  const group = oid('a');
+  const f = hub(t, 'auto-skin-collection', { accountIds: ['a', 'b', 'c'], senders: ['a'] }, (id, url) => {
+    if (url.pathname === '/') return { kind: 'ok', body: '{"buildId":"fixture"}' };
+    if (url.pathname.includes('/cases/')) return ok({ pageProps: { cases: [] } });
+    if (url.pathname.endsWith('/armory.json')) return ok({ pageProps: { armoryRewards: [] } });
+    assert(url.searchParams.has('all'));
+    if (id === 'c') return { kind: 'not-running' };
+    return ok({
+      skinCollections: [{ name: 'One', skingroupIds: [group] }, { name: 'Two', skingroupIds: [oid('b')] }],
+      userSkinCollection: id === 'a' ? { submittedSkingroupIds: [group], redeemedCollectionRewards: ['One'] } : null,
+    });
+  });
+  f.action('show-collection-progress');
+  assert.match((await f.action('collection-overview')).message, /2 of 3 Hub accounts/);
+  const blocks = f.blocks().find(block => block.title === 'Collection progress').blocks;
+  assert.equal(blocks.find(block => block.type === 'stats').items.find(item => item.label === 'Collections completed across accounts').value, 1);
+  assert.deepEqual(blocks.filter(block => block.type === 'card').map(block => block.title), ['One', 'Two']);
+  const first = blocks.find(block => block.title === 'One');
+  assert.match(first.summary, /1\/3 accounts complete/);
+  assert.deepEqual(first.blocks[0].rows, [['A', '1/1', 'Claimed'], ['B', '0/1', 'Incomplete'], ['C', '—', 'Unchecked']]);
 });
 
 test('Collection buying is capped and openings are verified without auto-sell', async t => {
