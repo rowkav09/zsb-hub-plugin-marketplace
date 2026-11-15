@@ -46,11 +46,12 @@
     "reason": "Downloads the public ChunkyCheese PriceData CSV from a fixed Google Sheets URL. Sends no account data.",
     "sha256": "684e67ba3ec826f2c74dc553b1f7eee87a78b620397f3655101eb87e30e2502f"
   },
-  "farm-value/index.js": {
+  "farm-value/desktop-chart.js": {
     "rules": [
-      "privileged-module"
+      "privileged-module",
+      "dynamic-code"
     ],
-    "reason": "Opens a local sandboxed BrowserWindow to display numeric history samples.",
-    "sha256": "01ec54401fcc3f8923051c72b51e97bccd8c0315805e2436e97320a5376cbc46"
+    "reason": "Mounts the local history chart only in the installed Hub desktop panel using serialized numeric samples.",
+    "sha256": "447c1bfedba85260ac67f8bd176f0e19d1c71597ab61cfdf92ba9a90cb21152d"
   }
 }

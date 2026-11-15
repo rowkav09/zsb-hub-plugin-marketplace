@@ -37,7 +37,7 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | [Auto Trade Favourites](plugins/auto-trade-favourites/) | Send favourites from farm accounts to a collector under value and trade caps. | [Download](downloads/auto-trade-favourites-1.0.0.zip) |
 | [Auto Sort SU](plugins/auto-sort-su/) | Sort skins into storage units with priority rules per account. | [Download](downloads/auto-sort-su-1.0.0.zip) |
 | [Auction Sniper](plugins/auction-sniper/) | Preview and place capped autobids from the Hub main account. | [Download](downloads/auction-sniper-1.0.0.zip) |
-| [Farm Value](plugins/farm-value/) | Track aggregate inventory, cash and tokens on a stacked history chart. | [Download](downloads/farm-value-1.0.0.zip) |
+| [Farm Value](plugins/farm-value/) | Track aggregate inventory, cash and tokens on a line chart inside Hub. | [Download](downloads/farm-value-1.1.0.zip) |
 
 ## Bundled plugin directory
 

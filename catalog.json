@@ -370,17 +370,17 @@
       "kind": "community",
       "category": "Farming",
       "summary": "Chart the combined inventory, cash and token balances of every Hub account.",
-      "overview": "Track ChunkyCheese-priced inventory and storage units alongside cash and converted tokens in a stacked history.",
-      "integration": "Reads balances and inventory through Hub routes and plots saved samples in a local chart window.",
+      "overview": "Track ChunkyCheese-priced inventory and storage units alongside cash and converted tokens in a line chart with a combined total.",
+      "integration": "Reads balances and inventory through Hub routes and plots saved samples inside the Hub desktop tab.",
       "operation": "Read-only snapshots and history",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
       "source": "plugins/farm-value/",
-      "download": "downloads/farm-value-1.0.0.zip",
-      "sha256": "1346d92bf1ba57c3e3a3f5a25e921688bb68b54530816b3795f3b04b18d4ceab"
+      "download": "downloads/farm-value-1.1.0.zip",
+      "sha256": "5ef018d0b2d25306ea00de36768e02565772e913120474430723de2e2d57bd97"
     }
   ]
 }

@@ -1,8 +1,8 @@
 {
   "id": "farm-value",
   "name": "Farm Value",
-  "version": "1.0.0",
-  "description": "Track combined inventory, cash and tokens for all Hub accounts on a stacked history chart.",
+  "version": "1.1.0",
+  "description": "Track combined inventory, cash and tokens for all Hub accounts on a line chart inside Hub.",
   "minCore": "1.2.8",
   "main": "index.js",
   "tab": "Farm Value",

@@ -1,8 +1,7 @@
 'use strict';
 
-const { BrowserWindow } = require('electron');
 const { PriceData } = require('./cco-price-data');
-const { chartDocument } = require('./chart');
+const { desktopChart } = require('./desktop-chart');
 
 const validId = id => typeof id === 'string' && /^[a-f0-9]{24}$/i.test(id);
 const money = value => '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -13,23 +12,15 @@ function start(ctx) {
   const prices = new PriceData();
   const data = ctx.data.get();
   let samples = Array.isArray(data?.samples) ? data.samples.filter(validSample).map(({ at, inventory, cash, tokens }) => ({ at, inventory, cash, tokens })) : [];
-  let stopped = false, working = false, revision = 0, chart, notice = '', errors = [], status = '';
+  let stopped = false, working = false, revision = 0, notice = '', errors = [], status = '';
   let next = Date.now() + 60_000;
   const rate = () => Number(ctx.settings.get('tokensPerDollar'));
 
-  function showChart() {
-    if (!samples.length) return { ok: false, message: 'Capture a complete snapshot first.' };
-    if (!(rate() > 0) || !Number.isFinite(rate())) return { ok: false, message: 'Choose a positive token conversion.' };
-    if (!chart || chart.isDestroyed()) {
-      chart = new BrowserWindow({ width: 1040, height: 670, minWidth: 640, minHeight: 490, autoHideMenuBar: true,
-        webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
-      chart.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-      chart.webContents.on('will-navigate', event => event.preventDefault());
-    }
-    void chart.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(chartDocument(samples, rate()))).catch(() => {});
-    chart.show();
-    return { message: 'Farm Value history opened.' };
-  }
+  const chart = desktopChart();
+  const syncChart = () => chart.sync(samples, rate());
+  void syncChart();
+  ctx.every(10_000, syncChart);
+  ctx.settings.onChange(key => { if (key === 'tokensPerDollar') void syncChart(); });
 
   async function capture() {
     if (working) return { ok: false, message: 'A snapshot is already running.' };
@@ -46,6 +37,15 @@ function start(ctx) {
       await prices.load();
       const totals = { at: Date.now(), inventory: 0, cash: 0, tokens: 0 };
       let position = 0, finished = 0;
+      let nextRead = 0, rateLimitUntil = 0;
+      async function pauseForRead() {
+        const start = Math.max(nextRead, rateLimitUntil, Date.now());
+        nextRead = start + 240;
+        while (Date.now() < Math.max(start, rateLimitUntil)) {
+          check();
+          await ctx.sleep(Math.min(1000, Math.max(start, rateLimitUntil) - Date.now()));
+        }
+      }
       async function worker() {
         while (position < accounts.length) {
           const account = accounts[position++];
@@ -54,10 +54,20 @@ function start(ctx) {
           async function read(path) {
             check();
             if (!expected || route() !== expected) throw Error('Account route unavailable or changed.');
-            const reply = await ctx.request(account.id, path, { method: 'GET', tries: 2, timeoutMs: 15000 });
-            if (route() !== expected) throw Error('Account route changed.');
-            if (reply?.kind !== 'ok') throw Error(path.split('?')[0] + ' · ' + (reply?.status || reply?.kind));
-            return reply.json;
+            for (let attempt = 0; attempt < 5; attempt++) {
+              await pauseForRead();
+              check();
+              if (route() !== expected) throw Error('Account route changed.');
+              const reply = await ctx.request(account.id, path, { method: 'GET', tries: 1, timeoutMs: 15000 });
+              if (route() !== expected) throw Error('Account route changed.');
+              if (reply?.kind === 'ok') return reply.json;
+              if (reply?.status !== 429 || attempt === 4) {
+                throw Error(path.split('?')[0] + ' · ' + (reply?.status || reply?.kind));
+              }
+              const wait = Math.max(8000 * 2 ** attempt, Number(reply.retryAfter) * 1000 || 0);
+              rateLimitUntil = Math.max(rateLimitUntil, Date.now() + wait);
+              status = 'Waiting for the inventory API rate limit…';
+            }
           }
           try {
             if (!account.healthy) throw Error('Account is not clicking.');
@@ -105,7 +115,7 @@ function start(ctx) {
       samples = [...samples, { ...totals, at: Date.now() }].slice(-2160);
       ctx.data.set({ samples });
       notice = 'Captured ' + accounts.length + ' accounts.';
-      if (chart && !chart.isDestroyed()) showChart();
+      void syncChart();
       return { message: notice };
     } catch (error) {
       notice = error.message;
@@ -118,7 +128,6 @@ function start(ctx) {
   }
 
   ctx.panel.action('capture', capture);
-  ctx.panel.action('chart', showChart);
   ctx.panel.action('stop', () => { revision++; return { message: 'Stopping this snapshot.' }; });
   ctx.every(60_000, () => { if (!working && Date.now() >= next) return capture(); });
   ctx.panel.tab('Farm Value', () => {
@@ -127,7 +136,6 @@ function start(ctx) {
       { type: 'settings', keys: ['tokensPerDollar', 'minutes'] },
       { type: 'buttons', items: [
         ...(working ? [{ action: 'stop', label: 'Stop snapshot', danger: true }] : [{ action: 'capture', label: 'Capture snapshot', primary: true }]),
-        ...(last ? [{ action: 'chart', label: 'Open stacked history' }] : []),
       ] },
       ...(status || notice ? [{ type: 'notice', text: status || notice }] : []),
       ...(last ? [{ type: 'stats', items: [
@@ -136,10 +144,12 @@ function start(ctx) {
         { label: 'Combined value', value: money(last.inventory + last.cash + last.tokens / rate()) },
         { label: 'Snapshots', value: samples.length },
       ] }] : []),
+      { type: 'card', id: 'farm-value-history', title: 'Value history', open: true,
+        blocks: [{ type: 'notice', text: 'Open the Farm Value tab in the desktop app to view the line chart.' }] },
       ...(errors.length ? [{ type: 'table', columns: ['Account', 'Snapshot error'], rows: errors }] : []),
     ] };
   });
-  return () => { stopped = true; if (chart && !chart.isDestroyed()) chart.destroy(); };
+  return () => { stopped = true; chart.stop(); };
 }
 
 let stop;

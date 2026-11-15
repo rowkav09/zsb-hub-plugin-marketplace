@@ -1,100 +1,180 @@
 'use strict';
 
-function renderChart() {
-  const canvas = document.querySelector('canvas');
-  const detail = document.querySelector('#detail');
-  const colors = ['#8065dd', '#40bf99', '#e5a950'];
-  const names = ['Inventory', 'Cash', 'Tokens'];
-  const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-  const tick = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1, style: 'currency', currency: 'USD' });
-  const date = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  let points = [], xAt = () => 0;
-  let index = -1;
+// Runs only in the stock Hub desktop panel.
+function installChart(update) {
+  const slot = '__zsbFarmValueHistory';
+  if (window[slot]) {
+    window[slot].update(update);
+    return true;
+  }
 
-  function display(sample) {
-    detail.textContent = sample
-      ? date.format(sample.at) + ' · ' + money.format(sample.values.reduce((sum, value) => sum + value, 0))
-        + ' total · ' + sample.values.map((value, i) => names[i] + ' ' + money.format(value)).join(' · ')
-      : 'Capture a snapshot in Hub to start the history.';
+  const tab = document.querySelector('#tab-plugin');
+  if (!tab) return false;
+  const marker = '[data-card="farm-value:farm-value-history"]';
+  const lineNames = ['Total', 'Inventory', 'Cash', 'Tokens'];
+  const colors = ['#bfc8ff', '#9e82fa', '#48d3a2', '#f0b464'];
+  const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const compact = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 });
+  const date = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const visible = [true, true, true, true];
+  let data = update;
+  let chart, point = -1;
+
+  function describe(points) {
+    const sample = points[point] || points.at(-1);
+    if (!sample) return 'Capture a snapshot to start the history.';
+    return date.format(sample.at) + ' · ' + sample.values.map((value, i) =>
+      lineNames[i] + ' ' + money.format(value)).join(' · ');
   }
 
   function draw() {
-    const ratio = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    canvas.width = w * ratio;
-    canvas.height = h * ratio;
-    const context = canvas.getContext('2d');
-    context.scale(ratio, ratio);
-    const left = 75, right = w - 24, top = 20, bottom = h - 42;
-    const highest = Math.max(1, ...points.map(point => point.values.reduce((sum, value) => sum + value, 0))) * 1.06;
+    if (!chart) return;
+    const { canvas, summary } = chart;
+    const width = canvas.clientWidth, height = canvas.clientHeight;
+    if (!width || !height) return;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(ratio, ratio);
+    const points = data.samples.map(sample => {
+      const tokens = sample.tokens / data.rate;
+      return { at: sample.at, values: [sample.inventory + sample.cash + tokens, sample.inventory, sample.cash, tokens] };
+    });
+    chart.points = points;
+    const left = 73, right = width - 17, top = 14, bottom = height - 35;
+    const maximum = Math.max(1, ...points.map(p => Math.max(...p.values.filter((_, i) => visible[i]))));
+    const exponent = 10 ** Math.floor(Math.log10(maximum / 4));
+    const step = [1, 2, 2.5, 5, 10].map(x => x * exponent).find(x => x >= maximum / 4);
+    const ceiling = Math.ceil(maximum / step) * step;
     const start = points[0]?.at ?? 0, end = points.at(-1)?.at ?? start;
-    xAt = at => start === end ? (left + right) / 2 : left + (at - start) / (end - start) * (right - left);
-    const yAt = value => bottom - value / highest * (bottom - top);
-    context.font = '12px system-ui';
-    context.textAlign = 'right';
-    for (let i = 0; i <= 4; i++) {
-      const value = highest * i / 4, y = yAt(value);
-      context.strokeStyle = '#282936';
-      context.beginPath(); context.moveTo(left, y); context.lineTo(right, y); context.stroke();
-      context.fillStyle = '#b6b7c8'; context.fillText(tick.format(value), left - 10, y + 4);
+    const x = at => start === end ? (left + right) / 2 : left + (at - start) / (end - start) * (right - left);
+    chart.x = x;
+    const y = value => bottom - value / ceiling * (bottom - top);
+    const theme = getComputedStyle(canvas);
+    ctx.font = '12px system-ui';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= Math.round(ceiling / step); i++) {
+      const value = i * step, py = y(value);
+      ctx.strokeStyle = theme.getPropertyValue('--line').trim() || '#313644';
+      ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(right, py); ctx.stroke();
+      ctx.fillStyle = theme.getPropertyValue('--text-2').trim() || '#a1a6b5';
+      ctx.fillText(compact.format(value), left - 9, py + 4);
     }
-    if (!points.length) return;
-    const pointTotal = (sample, upto) => sample.values.slice(0, upto).reduce((sum, value) => sum + value, 0);
-    for (let i = 0; i < colors.length; i++) {
-      context.fillStyle = colors[i];
-      context.globalAlpha = .84;
-      if (points.length === 1) {
-        const x = xAt(start), p = points[0];
-        context.fillRect(x - 44, yAt(pointTotal(p, i + 1)), 88, yAt(pointTotal(p, i)) - yAt(pointTotal(p, i + 1)));
-      } else {
-        context.beginPath();
-        for (const [j, p] of points.entries()) context[j === 0 ? 'moveTo' : 'lineTo'](xAt(p.at), yAt(pointTotal(p, i + 1)));
-        for (let j = points.length - 1; j >= 0; j--) context.lineTo(xAt(points[j].at), yAt(pointTotal(points[j], i)));
-        context.closePath(); context.fill();
+    if (points.length) {
+      for (let i = 0; i < visible.length; i++) {
+        if (!visible[i]) continue;
+        ctx.strokeStyle = colors[i]; ctx.fillStyle = colors[i]; ctx.lineWidth = i === 0 ? 2.6 : 1.8;
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (const [j, p] of points.entries()) ctx[j ? 'lineTo' : 'moveTo'](x(p.at), y(p.values[i]));
+        ctx.stroke();
+        if (points.length <= 12 || point >= 0) {
+          for (const p of (points.length <= 12 ? points : [points[point]])) {
+            ctx.beginPath(); ctx.arc(x(p.at), y(p.values[i]), 3, 0, Math.PI * 2); ctx.fill();
+          }
+        }
       }
-      context.globalAlpha = 1;
+      if (point >= 0 && points.length > 1) {
+        const selectedX = x(points[point].at);
+        ctx.strokeStyle = theme.color;
+        ctx.globalAlpha = .42; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath();
+        ctx.moveTo(selectedX, top); ctx.lineTo(selectedX, bottom); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = theme.getPropertyValue('--text-2').trim() || '#a1a6b5';
+      for (const [at, align] of start === end ? [[start,'center']] : [[start,'left'],[end,'right']]) {
+        ctx.textAlign = align; ctx.fillText(date.format(at), x(at), height - 10);
+      }
     }
-    for (const [at, align] of start === end ? [[start, 'center']] : [[start, 'left'], [end, 'right']]) {
-      context.textAlign = align; context.fillStyle = '#b6b7c8'; context.fillText(date.format(at), xAt(at), h - 15);
-    }
-    if (index >= 0 && points.length > 1) {
-      const x = xAt(points[index].at);
-      context.strokeStyle = '#f1f2f8'; context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke();
-    }
+    summary.textContent = describe(points);
+    canvas.dataset.samples = String(points.length);
   }
 
-  const data = JSON.parse(document.querySelector('#history').textContent);
-  points = data.samples.map(sample => ({ at: sample.at, values: [sample.inventory, sample.cash, sample.tokens / data.rate] }));
-  display(points.at(-1));
-  canvas.addEventListener('pointermove', event => {
-    if (!points.length) return;
-    index = points.reduce((best, point, i) => Math.abs(xAt(point.at) - event.offsetX) < Math.abs(xAt(points[best].at) - event.offsetX) ? i : best, 0);
-    display(points[index]); draw();
-  });
-  canvas.addEventListener('pointerleave', () => { index = -1; display(points.at(-1)); draw(); });
-  window.addEventListener('resize', draw);
-  draw();
+  function element(tag, className, value) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (value) node.textContent = value;
+    return node;
+  }
+
+  function unmount() {
+    if (!chart) return;
+    chart.resize.disconnect();
+    chart.root.remove();
+    if (chart.placeholder) chart.placeholder.hidden = false;
+    chart = undefined;
+  }
+
+  function mount() {
+    const holder = tab.querySelector(marker)?.closest('.pcard')?.querySelector('.pcard-body');
+    if (holder === chart?.holder) return;
+    unmount();
+    if (!holder) return;
+    const root = element('div', 'farm-value-chart');
+    const style = element('style');
+    style.textContent = `
+      .farm-value-chart{padding:10px 2px 4px}
+      .farm-value-chart .fv-legend{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 7px 4px}
+      .farm-value-chart .fv-legend button{padding:5px 10px;border-radius:8px;font-size:12px;display:inline-flex;align-items:center;gap:7px}
+      .farm-value-chart .fv-legend button[aria-pressed="false"]{opacity:.46}
+      .farm-value-chart .fv-legend i{width:9px;height:3px;border-radius:3px}
+      .farm-value-chart canvas{width:100%;height:clamp(230px,38vh,385px);display:block;touch-action:pan-y}
+      .farm-value-chart .fv-detail{font-size:12px;color:var(--text-2);min-height:18px;text-align:left;margin:6px 4px 0;font-variant-numeric:tabular-nums}
+    `;
+    const legend = element('div', 'fv-legend');
+    for (const [i, name] of lineNames.entries()) {
+      const button = element('button', 'small');
+      const swatch = element('i');
+      swatch.style.background = colors[i];
+      button.type = 'button';
+      button.setAttribute('aria-pressed', String(visible[i]));
+      button.append(swatch, document.createTextNode(name));
+      button.addEventListener('click', () => {
+        if (visible[i] && visible.filter(Boolean).length === 1) return;
+        visible[i] = !visible[i]; button.setAttribute('aria-pressed', String(visible[i])); draw();
+      });
+      legend.append(button);
+    }
+    const canvas = element('canvas');
+    canvas.tabIndex = 0;
+    canvas.setAttribute('aria-label', 'Combined farm value history in in-game dollars. Use arrow keys to inspect snapshots.');
+    const summary = element('div', 'fv-detail');
+    summary.setAttribute('aria-live', 'polite');
+    root.append(style, legend, canvas, summary);
+    const placeholder = holder.querySelector('.pnotice');
+    if (placeholder) placeholder.hidden = true;
+    holder.append(root);
+    point = -1;
+    const resize = new ResizeObserver(draw);
+    chart = { root, holder, canvas, summary, placeholder, resize };
+    resize.observe(canvas);
+    canvas.addEventListener('pointermove', event => {
+      const { points, x } = chart;
+      if (!points.length) return;
+      point = points.reduce((best, p, i) =>
+        Math.abs(x(p.at) - event.offsetX) < Math.abs(x(points[best].at) - event.offsetX) ? i : best, 0);
+      draw();
+    });
+    canvas.addEventListener('pointerleave', () => { point = -1; draw(); });
+    canvas.addEventListener('keydown', event => {
+      if (!['ArrowLeft','ArrowRight'].includes(event.key) || !chart.points.length) return;
+      event.preventDefault();
+      const initial = point < 0 ? chart.points.length - 1 : point;
+      point = Math.max(0, Math.min(chart.points.length - 1, initial + (event.key === 'ArrowLeft' ? -1 : 1)));
+      draw();
+    });
+    draw();
+  }
+
+  const observer = new MutationObserver(mount);
+  observer.observe(tab, { childList: true, subtree: true });
+  window[slot] = {
+    update(update) { data = update; point = -1; mount(); draw(); },
+    dispose() { observer.disconnect(); unmount(); delete window[slot]; },
+  };
+  mount();
+  return true;
 }
 
-function chartDocument(samples, rate) {
-  const history = JSON.stringify({ samples, rate });
-  return `<!doctype html><html lang="en"><meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
-  <title>Farm Value · ZSB Hub</title>
-  <style>
-    *{box-sizing:border-box}body{font:15px system-ui;margin:0;padding:26px;color:#f3f1fb;background:#15151e}
-    h1{margin:0;font-size:27px} p{margin:5px 0;color:#bbb9cf}
-    ul{display:flex;gap:20px;padding:0;margin:20px 0 8px;list-style:none;color:#dddcea}
-    i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px}
-    canvas{width:100%;height:calc(100vh - 216px);min-height:240px;background:#1b1c27;border:1px solid #2b2c3b;border-radius:12px}
-    #detail{margin-top:9px;font-variant-numeric:tabular-nums;color:#eeedf5}
-  </style>
-  <h1>Combined farm value</h1><p>All Hub accounts · in-game dollar equivalent</p>
-  <ul><li><i style="background:#8065dd"></i>Inventory</li><li><i style="background:#40bf99"></i>Cash</li><li><i style="background:#e5a950"></i>Tokens</li></ul>
-  <canvas role="img" aria-label="Stacked history of inventory value, cash, and tokens"></canvas>
-  <p id="detail" aria-live="polite"></p><p>${rate} tokens per $1 in-game value</p>
-  <script type="application/json" id="history">${history}</script>
-  <script>(${renderChart.toString()})();</script></html>`;
-}
-
-module.exports = { chartDocument };
+module.exports = { installChart };
