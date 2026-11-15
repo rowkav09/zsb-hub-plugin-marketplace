@@ -1,0 +1,25 @@
+{
+  "id": "auto-trade-favourites",
+  "name": "Auto Trade Favourites",
+  "version": "1.0.0",
+  "description": "Send explicitly favourited skins from selected farm accounts to one collector account.",
+  "main": "index.js",
+  "minCore": "1.2.8",
+  "group": "farming",
+  "tab": "Trade Favourites",
+  "defaultEnabled": false,
+  "power": true,
+  "packageShared": ["farm-batch.js"],
+  "settings": {
+    "accounts": { "type": "accounts", "label": "Sender accounts" },
+    "receiver": { "type": "account", "label": "Receiver account" },
+    "names": { "type": "tags", "label": "Skin names include", "help": "An empty list includes all favourited skins within the price range." },
+    "minPrice": { "type": "number", "label": "Minimum value ($)", "default": 0, "min": 0 },
+    "maxPrice": { "type": "number", "label": "Maximum value per skin ($)", "default": 0, "min": 0, "help": "Set a positive cap before scanning." },
+    "items": { "type": "number", "label": "Maximum skins per trade", "default": 10, "min": 1, "max": 50 },
+    "trades": { "type": "number", "label": "Maximum trades per run", "default": 3, "min": 1, "max": 20 },
+    "reserve": { "type": "number", "label": "Receiving trades to leave available", "default": 5, "min": 0, "max": 100 },
+    "pages": { "type": "number", "label": "Inventory pages per sender", "default": 3, "min": 1, "max": 20 },
+    "minutes": { "type": "number", "label": "Scheduled interval (minutes)", "default": 30, "min": 5, "max": 240 }
+  }
+}

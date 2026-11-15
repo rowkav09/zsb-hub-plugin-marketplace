@@ -52,6 +52,18 @@ def pack(source: Path, output: Path, extra: Path | None) -> str:
         raise ValueError("id must contain 1–40 lowercase letters, digits or hyphens")
     if not re.fullmatch(r"\d+\.\d+\.\d+", str(manifest.get("version", ""))):
         raise ValueError("use a numeric x.y.z version")
+    shared = manifest.get("packageShared", [])
+    if not isinstance(shared, list) or len(shared) != len(set(map(str, shared))):
+        raise ValueError("packageShared must list unique shared JavaScript files")
+    shared_dir = Path(__file__).resolve().parents[1] / "shared"
+    for name in shared:
+        if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]*\.js", name) or name in entries:
+            raise ValueError(f"invalid shared file: {name!r}")
+        file = shared_dir / name
+        if not file.is_file() or file.is_symlink():
+            raise ValueError(f"missing shared file: {name}")
+        entries[name] = file
+
     main = manifest.get("main")
     if not isinstance(main, str) or main not in entries:
         raise ValueError("main must name a file in the ZIP")

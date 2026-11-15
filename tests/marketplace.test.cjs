@@ -50,7 +50,8 @@ test('lists GitHub ZIPs, imports the selected package once, and updates the list
   const fixture = makeFixture(t);
   await fixture.action('refresh');
   const picker = fixture.render().blocks.find(block => block.type === 'picker');
-  assert.deepEqual(picker.items.map(item => item.id), ['daily-reports', 'terminal-opener', 'skillmap-presets', 'auto-forge']);
+  assert.deepEqual(picker.items.map(item => item.id), ['daily-reports', 'terminal-opener', 'skillmap-presets', 'auto-forge',
+    'auto-skin-collection', 'auto-trade-favourites', 'auto-sort-su']);
   assert.match(JSON.stringify(fixture.render()), /Install Daily reports/);
   await fixture.action('select', 'not-in-catalog');
   const result = await fixture.action('install', reports.id);

@@ -1,0 +1,32 @@
+{
+  "id": "auto-skin-collection",
+  "name": "Auto Skin Collection Completer",
+  "version": "1.0.0",
+  "description": "Submit eligible skins and claim collection rewards across selected farm accounts, with optional budgeted case buying and opening.",
+  "main": "index.js",
+  "minCore": "1.2.8",
+  "group": "farming",
+  "tab": "Skin Collections",
+  "defaultEnabled": false,
+  "power": true,
+  "packageShared": ["farm-batch.js"],
+  "settings": {
+    "accounts": { "type": "accounts", "label": "Farm accounts" },
+    "collections": { "type": "tags", "label": "Exact collection names", "placeholder": "Prisma Case", "help": "Use names shown on the site's Skin Collection page." },
+    "maxSkin": { "type": "number", "label": "Maximum value of a submitted skin ($)", "default": 0, "min": 0 },
+    "submissions": { "type": "number", "label": "Maximum submissions per account", "default": 25, "min": 1, "max": 80 },
+    "redeem": { "type": "boolean", "label": "Claim completion rewards", "default": true },
+    "source": {
+      "type": "choice", "label": "How to fill gaps", "default": "inventory",
+      "options": [
+        { "value": "inventory", "label": "Submit from inventory" },
+        { "value": "owned", "label": "Also open owned cases" },
+        { "value": "buy", "label": "Also buy and open within budget" }
+      ]
+    },
+    "opens": { "type": "number", "label": "Maximum cases opened per account per run", "default": 10, "min": 1, "max": 100 },
+    "spend": { "type": "number", "label": "Maximum case spend per account per run ($)", "default": 0, "min": 0 },
+    "reserve": { "type": "number", "label": "Cash reserve per account ($)", "default": 0, "min": 0 },
+    "minutes": { "type": "number", "label": "Scheduled interval (minutes)", "default": 30, "min": 5, "max": 240 }
+  }
+}

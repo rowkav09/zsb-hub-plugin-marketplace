@@ -1,0 +1,40 @@
+{
+  "id": "auto-sort-su",
+  "name": "Auto Sort SU",
+  "version": "1.0.0",
+  "description": "Sort skins into existing storage units using ordered rules scoped to your farm accounts.",
+  "main": "index.js",
+  "minCore": "1.2.8",
+  "group": "farming",
+  "tab": "Storage Sort",
+  "defaultEnabled": false,
+  "power": true,
+  "packageShared": ["farm-batch.js"],
+  "settings": {
+    "accounts": { "type": "accounts", "label": "Farm accounts" },
+    "rules": {
+      "type": "list", "label": "Storage rules", "itemLabel": "Rule", "addLabel": "Add rule",
+      "fields": {
+        "account": { "type": "account", "label": "Only this account (empty = all selected)" },
+        "priority": { "type": "number", "label": "Priority (lower runs first)", "default": 10, "min": 1, "max": 999 },
+        "kind": {
+          "type": "choice", "label": "Match by", "default": "fade",
+          "options": [
+            { "value": "fade", "label": "100% Fade" },
+            { "value": "rank1", "label": "Rank #1 in any float category" },
+            { "value": "rank10", "label": "Top 10 in any float category" },
+            { "value": "pattern", "label": "Exact pattern name" },
+            { "value": "name", "label": "Skin name contains" },
+            { "value": "rarity", "label": "Exact rarity" },
+            { "value": "favourite", "label": "Favourited skins" }
+          ]
+        },
+        "match": { "type": "text", "label": "Name, pattern or rarity (where applicable)", "default": "" },
+        "unit": { "type": "text", "label": "Exact storage unit name", "default": "" }
+      }
+    },
+    "items": { "type": "number", "label": "Maximum skins per account per run", "default": 20, "min": 1, "max": 100 },
+    "pages": { "type": "number", "label": "Inventory pages per rule", "default": 3, "min": 1, "max": 20 },
+    "minutes": { "type": "number", "label": "Scheduled interval (minutes)", "default": 30, "min": 5, "max": 240 }
+  }
+}
