@@ -1,7 +1,7 @@
 {
   "id": "daily-reports",
   "name": "Daily reports",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A report for every day, closed at midnight on this PC's own clock: what each account gained (networth, money, tokens, XP, rank), how long it was clicking, every time it went down, and what the other plugins did. Today so far and past days in the Reports tab.",
   "minCore": "1.2.5",
   "main": "index.js",
@@ -24,7 +24,7 @@
       "type": "boolean",
       "label": "Add what the other plugins did",
       "default": true,
-      "help": "Opener, Converter, Armory, Trader, Games and Terminal opener, read from their own saved numbers. Missions, Pass and Rewards don't keep theirs, so they can't be added."
+      "help": "Opener, Converter, Armory, Trader, Games, Terminal opener and Auto forge, read from their own saved numbers. Missions, Pass and Rewards don't keep theirs, so they can't be added."
     }
   }
 }

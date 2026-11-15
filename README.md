@@ -29,10 +29,10 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | Community plugin | What it does | ZIP |
 | --- | --- | --- |
 | [External Marketplace](plugins/zsb-marketplace/) | Lists, installs and updates community plugins from this repository. | [Download](https://github.com/rowkav09/zsb-hub-plugin-marketplace/releases/download/marketplace-v1.0.0/zsb-marketplace-1.0.0.zip) |
-| [Daily reports](plugins/daily-reports/) by Gufries | Tracks daily gains, clicks, downtime and plugin activity. | [Download](downloads/daily-reports-1.0.0.zip) |
+| [Daily reports](plugins/daily-reports/) by Gufries | Tracks daily gains, clicks, downtime and plugin activity, including Auto Forge counters. | [Download](downloads/daily-reports-1.0.1.zip) |
 | [Terminal opener](plugins/terminal-opener/) by Gufries | Opens Genesis and Dead Hand terminals on selected accounts. Accepted offers spend account balance. | [Download](downloads/terminal-opener-1.0.0.zip) |
 | [Skillmap Presets](plugins/skillmap-presets/) | Preview and apply skill builds across farm accounts within per-account limits. Requires Hub 1.2.8+. | [Download](downloads/skillmap-presets-1.0.0.zip) |
-| [Forge Queue](plugins/forge-queue/) | Scan inventories and forge approved skins across accounts with value and batch limits. Requires Hub 1.2.8+. | [Download](downloads/forge-queue-1.0.0.zip) |
+| [Auto Forge](plugins/auto-forge/) | Pick skins from inventory, approve a capped batch, and optionally chain upgrades to Legendary. Requires Hub 1.2.8+. | [Download](downloads/auto-forge-1.1.1.zip) |
 
 ## Bundled plugin directory
 

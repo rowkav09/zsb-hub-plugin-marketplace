@@ -28,6 +28,6 @@
       "privileged-module"
     ],
     "reason": "Reads saved counters from a fixed list of sibling plugin JSON files.",
-    "sha256": "03b8b5b24c13f0650692ee69303f311b7e4456ef46dd19b869cda7539bdba49d"
+    "sha256": "e99eaf94e55c9515ac93af26117f7dab50a5ca54dbb579cd020d9edda4a6550b"
   }
 }

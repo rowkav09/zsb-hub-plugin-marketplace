@@ -39,6 +39,8 @@ const SOURCES = [
       text: (v) => [plural(v.plays, 'play'), `net ${smoney(v.back - v.bet)}`, v.tokens || v.cash ? `reward tiers ${count(v.tokens)} tokens + ${money(v.cash)}` : ''] },
     { id: 'terminal-opener', name: 'Terminal opener', read: (s) => s.today && { day: s.day, v: pick(s.today, ['opened', 'bought', 'spent', 'worth', 'kept']) },
       text: (v) => [`${count(v.opened)} opened`, `${count(v.bought)} bought for ${money(v.spent)} (worth ${money(v.worth)})`, `${count(v.kept)} kept`] },
+    { id: 'auto-forge', name: 'Auto forge', read: (s) => s.today && { day: s.day, v: pick(s.today, ['forged', 'ok', 'failed', 'skipped', 'legendary']) },
+      text: (v) => [`${count(v.forged)} forged`, `${count(v.ok)} successful`, `${count(v.failed)} failed`, v.skipped ? `${count(v.skipped)} skipped` : '', v.legendary ? `${count(v.legendary)} reached Legendary` : ''] },
 ];
 
 let ctx = null;

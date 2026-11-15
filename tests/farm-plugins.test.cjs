@@ -2,7 +2,7 @@
 
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const forge = require('../plugins/forge-queue');
+const forge = require('../plugins/auto-forge');
 const skills = require('../plugins/skillmap-presets');
 const { MAPS, parseMap, purchasePlan } = require('../plugins/skillmap-presets/planning');
 
@@ -15,6 +15,11 @@ function farm(plugin, manifest, overrides, respond) {
   const busy = new Set();
   let render;
   let onChange;
+  let saved = {};
+  const routes = {
+    routes: [{ id: 'tunnel-a', group: 'ip:203.0.113.10' }, { id: 'tunnel-b', group: 'ip:203.0.113.20' }],
+    accounts: accounts.map(account => ({ id: account.id, route: 'tunnel-a' })),
+  };
   plugin.start({
     accounts: {
       list: () => accounts,
@@ -23,10 +28,13 @@ function farm(plugin, manifest, overrides, respond) {
       wanted: () => false,
       setBusy: (id, reason) => reason ? locks.set(id, reason) : locks.delete(id),
     },
+    network: { state: () => routes },
+    data: { get: () => saved, set: state => { saved = structuredClone(state); } },
     settings: {
       get: key => settings[key],
       runsOn: (_key, id) => !settings.only || settings.only.includes(id),
       onChange: fn => { onChange = fn; },
+      set(key, value) { settings[key] = value; onChange(key); return { ok: true }; },
     },
     panel: {
       action: (name, fn) => actions.set(name, fn),
@@ -40,26 +48,28 @@ function farm(plugin, manifest, overrides, respond) {
     log() {},
   });
   return {
-    busy, locks,
+    busy, locks, routes,
+    data: () => saved,
     action: (name, arg) => actions.get(name)(arg),
     button: name => render().blocks.filter(block => block.type === 'buttons').flatMap(block => block.items).find(button => button.action === name),
-    preview: () => render().blocks.find(block => block.type === 'card').blocks[0].rows,
+    preview: () => render().blocks.find(block => ['forge-preview', 'skill-preview'].includes(block.id)).blocks[0].rows,
     posts: () => requests.filter(request => request.method === 'POST'),
-    change(key, value) { settings[key] = value; onChange(); },
+    change(key, value) { settings[key] = value; onChange(key); },
   };
 }
 
-const forgeManifest = require('../plugins/forge-queue/plugin.json');
+const forgeManifest = require('../plugins/auto-forge/plugin.json');
 const skin = (_id, price, extra) => ({ _id, price, name: _id, quality: 0, isFavorite: false, hasPattern: true, statTrak: false, ...extra });
 const inventory = skins => ({ kind: 'ok', json: { skins, pages: 1 } });
+const forgeDefaults = { maxPrice: 10, delay: 0 };
 
-test('Forge Queue previews capped selections across accounts and refreshes the approved items', async () => {
+test('Auto Forge caps the preview, invalidates approval on picker changes, and rechecks eligibility', async () => {
   const inventories = {
     first: [skin('favourite', 0, { isFavorite: true }), skin('unknown', 0, { isFavorite: undefined }),
       skin('over cap', 11), skin('StatTrak', 0, { statTrak: true }), skin('a', 1), skin('b', 2)],
     second: [skin('c', 3), skin('d', 4)],
   };
-  const f = farm(forge, forgeManifest, { maxPrice: 10, batchLimit: 3, perAccount: 2 }, (id, pathname, opts) => {
+  const f = farm(forge, forgeManifest, { ...forgeDefaults, batchLimit: 3, perAccount: 2 }, (id, pathname, opts) => {
     if (opts.method === 'POST') return { kind: 'ok', json: { message: 'Reforge successful.' } };
     assert.match(pathname, /^\/api\/inventory\?/);
     return inventory(inventories[id]);
@@ -67,31 +77,98 @@ test('Forge Queue previews capped selections across accounts and refreshes the a
   await f.action('scan');
   assert.deepEqual(f.preview().map(row => row[1]), ['a', 'b', 'c']);
   assert.equal(f.posts().length, 0);
-
+  const broadToken = f.button('forge').arg;
+  assert.equal(f.action('pick', 'b').ok, true);
+  assert.deepEqual(f.preview().map(row => row[1]), ['b']);
+  assert.equal((await f.action('forge', broadToken)).ok, false);
+  assert.equal(f.action('pick', 'b').ok, true);
   inventories.first = [skin('a', 1, { isFavorite: true }), skin('b', 2), skin('new', 0)];
+
   const token = f.button('forge').arg;
-  assert.equal((await f.action('forge', 'wrong-token')).ok, false);
-  assert.match((await f.action('forge', token)).message, /2 forged/);
+  assert.match((await f.action('forge', token)).message, /2 successful/);
   assert.deepEqual(f.posts().map(req => [req.id, req.body, req.tries]), [
     ['first', { skinId: 'b' }, 1],
     ['second', { skinId: 'c' }, 1],
   ]);
   assert.equal((await f.action('forge', token)).ok, false);
   assert.equal(f.locks.size, 0);
+  assert.equal(f.data().today.ok, 2);
 });
 
-test('Forge Queue invalidates previews on settings changes and halts on unknown results', async () => {
-  const f = farm(forge, forgeManifest, { maxPrice: 10 }, (id, _, opts) =>
-    opts.method === 'POST' ? { kind: 'timeout' } : inventory([skin(id, 1)]));
+test('Auto Forge rechecks the upgraded skin and caps every stage of a Legendary chain', async () => {
+  let stock = [skin('one', 1, { name: 'Picked' }), skin('two', 2, { name: 'Other' })];
+  const f = farm(forge, forgeManifest, { ...forgeDefaults, target: 'all', perAccount: 2, only: ['first'] }, (_, path, opts) => {
+    if (opts.method === 'POST') {
+      const previous = stock.find(item => item._id === opts.body.skinId);
+      assert(previous);
+      const next = { ...previous, _id: previous._id + 'u', quality: previous.quality + 1, price: previous.price + 1 };
+      stock = [...stock.filter(item => item !== previous), next];
+      return { kind: 'ok', json: { message: 'Reforge successful.', skin: next } };
+    }
+    const quality = Number(new URL(path, 'https://test.invalid').searchParams.get('quality'));
+    return inventory(stock.filter(item => item.quality === quality));
+  });
   await f.action('scan');
-  const token = f.button('forge').arg;
-  f.change('perAccount', 1);
-  assert.equal((await f.action('forge', token)).ok, false);
-  assert.equal(f.posts().length, 0);
+  assert.deepEqual(f.preview(), [['First', 'Picked', 'Common', '$1', 2]]);
+  assert.match((await f.action('forge', f.button('forge').arg)).message, /^2 attempted/);
+  assert.deepEqual(f.posts().map(req => req.body.skinId), ['one', 'oneu']);
+});
+
+test('Auto Forge stops a chain if the upgraded skin exceeds the price cap', async () => {
+  const upgraded = skin('one-up', 11, { name: 'Picked', quality: 1 });
+  let upgradedOnce = false;
+  const f = farm(forge, forgeManifest, { ...forgeDefaults, target: 'all', only: ['first'] }, (_, path, opts) => {
+    if (opts.method === 'POST') {
+      assert.equal(upgradedOnce, false);
+      upgradedOnce = true;
+      return { kind: 'ok', json: { message: 'Reforge successful.', skin: upgraded } };
+    }
+    const quality = Number(new URL(path, 'https://test.invalid').searchParams.get('quality'));
+    if (quality === 0) return inventory(upgradedOnce ? [] : [skin('one', 1, { name: 'Picked' })]);
+    return inventory(quality === 1 && upgradedOnce ? [upgraded] : []);
+  });
   await f.action('scan');
-  assert.match((await f.action('forge', f.button('forge').arg)).message, /1 unconfirmed/);
+  assert.match((await f.action('forge', f.button('forge').arg)).message, /^1 attempted.*1 skipped/);
+  assert.deepEqual(f.posts().map(req => req.body.skinId), ['one']);
+});
+
+test('Auto Forge blocks concurrent lanes on the same IP and halts on an unconfirmed result', async () => {
+  let began;
+  let finish;
+  const outbound = new Promise(resolve => { began = resolve; });
+  const response = new Promise(resolve => { finish = resolve; });
+  const f = farm(forge, forgeManifest, forgeDefaults, (id, _, opts) => {
+    if (opts.method !== 'POST') return inventory([skin(id + '-first', 1), skin(id + '-second', 2)]);
+    began();
+    return response;
+  });
+  await f.action('scan');
+  const running = f.action('forge', f.button('forge').arg);
+  await outbound;
   assert.deepEqual(f.posts().map(req => req.id), ['first']);
+  assert.equal(f.locks.size, 1);
+  finish({ kind: 'timeout' });
+  assert.match((await running).message, /1 unconfirmed.*Batch stopped/);
+  assert.equal(f.posts().length, 1);
   assert.equal(f.locks.size, 0);
+  assert.equal(f.data().today.unconfirmed, 1);
+  assert.equal(f.data().pending, true);
+  await f.action('scan');
+  assert.equal(f.button('forge'), undefined);
+  assert.equal(f.action('review').ok, true);
+  assert.equal(f.data().pending, false);
+  assert.equal(f.button('forge'), undefined);
+});
+
+test('Auto Forge skips an account whose Hub route changed after the preview', async () => {
+  const f = farm(forge, forgeManifest, { ...forgeDefaults, only: ['first'] }, (_, path, opts) => {
+    assert.equal(opts.method, undefined);
+    return inventory([skin('one', 1)]);
+  });
+  await f.action('scan');
+  f.routes.accounts[0].route = 'tunnel-b';
+  assert.match((await f.action('forge', f.button('forge').arg)).message, /^0 attempted.*1 skipped/);
+  assert.equal(f.posts().length, 0);
 });
 
 const skillManifest = require('../plugins/skillmap-presets/plugin.json');

@@ -1,0 +1,39 @@
+{
+  "id": "auto-forge",
+  "name": "Auto Forge",
+  "version": "1.1.1",
+  "description": "Preview and forge capped batches across farm accounts, with an inventory picker, optional Legendary chaining and progress in Daily Reports.",
+  "minCore": "1.2.8",
+  "main": "index.js",
+  "tab": "Forge",
+  "group": "farming",
+  "defaultEnabled": false,
+  "settings": {
+    "accounts": { "type": "accounts", "label": "Farm accounts" },
+    "target": {
+      "type": "choice", "label": "Forge mode", "default": "0",
+      "options": [
+        { "value": "0", "label": "Common to Rare" },
+        { "value": "1", "label": "Rare to Epic" },
+        { "value": "2", "label": "Epic to Legendary" },
+        { "value": "any", "label": "One attempt per skin below Legendary" },
+        { "value": "all", "label": "Chain to Legendary within caps" }
+      ]
+    },
+    "type": {
+      "type": "choice", "label": "Skin type", "default": "normal",
+      "options": [
+        { "value": "normal", "label": "Normal only" },
+        { "value": "stattrak", "label": "StatTrak only" },
+        { "value": "any", "label": "Normal and StatTrak" }
+      ]
+    },
+    "skins": { "type": "tags", "label": "Only these skins", "placeholder": "Exact skin name…", "help": "Pick names from a scan, or enter exact names. An empty list matches all eligible names." },
+    "maxPrice": { "type": "number", "label": "Maximum skin value per attempt ($)", "default": 0, "min": 0, "help": "Set a value above zero before scanning." },
+    "perAccount": { "type": "number", "label": "Attempts per account", "default": 5, "min": 1, "max": 50 },
+    "batchLimit": { "type": "number", "label": "Total attempts per batch", "default": 25, "min": 1, "max": 250 },
+    "perIp": { "type": "number", "label": "Concurrent accounts per exit IP", "default": 1, "min": 1, "max": 6 },
+    "delay": { "type": "number", "label": "Delay between attempts on an account (ms)", "default": 600, "min": 0, "max": 10000 },
+    "pages": { "type": "number", "label": "Inventory pages per account and quality", "default": 3, "min": 1, "max": 25 }
+  }
+}

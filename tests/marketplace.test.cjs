@@ -50,24 +50,24 @@ test('lists GitHub ZIPs, imports the selected package once, and updates the list
   const fixture = makeFixture(t);
   await fixture.action('refresh');
   const picker = fixture.render().blocks.find(block => block.type === 'picker');
-  assert.deepEqual(picker.items.map(item => item.id), ['daily-reports', 'terminal-opener', 'skillmap-presets', 'forge-queue']);
+  assert.deepEqual(picker.items.map(item => item.id), ['daily-reports', 'terminal-opener', 'skillmap-presets', 'auto-forge']);
   assert.match(JSON.stringify(fixture.render()), /Install Daily reports/);
   await fixture.action('select', 'not-in-catalog');
   const result = await fixture.action('install', reports.id);
-  assert.match(result.message, /Daily reports 1.0.0 imported/);
+  assert.match(result.message, /Daily reports 1\.0\.1 imported/);
   assert.equal(fixture.imports(), 1);
-  assert.match(JSON.stringify(fixture.render()), /1.0.0 · Installed/);
+  assert.match(JSON.stringify(fixture.render()), /1\.0\.1 · Installed/);
   assert.equal((await fixture.action('install', reports.id)).ok, false);
   assert.equal(fixture.imports(), 1);
 });
 
 test('updates an older community install and preserves newer or bundled copies', async t => {
-  const older = makeFixture(t, { installed: [{ id: reports.id, version: '0.9.0' }] });
+  const older = makeFixture(t, { installed: [{ id: reports.id, version: '1.0.0' }] });
   await older.action('refresh');
   assert.match(JSON.stringify(older.render()), /Update Daily reports/);
   await older.action('install', reports.id);
   assert.equal(older.imports(), 1);
-  for (const local of [{ version: '1.1.0' }, { version: '1.0.0', bundled: true }]) {
+  for (const local of [{ version: '1.1.0' }, { version: '1.0.1', bundled: true }]) {
     const fixture = makeFixture(t, { installed: [{ id: reports.id, ...local }] });
     await fixture.action('refresh');
     assert.equal((await fixture.action('install', reports.id)).ok, false);
