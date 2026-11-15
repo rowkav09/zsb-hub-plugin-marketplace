@@ -46,10 +46,13 @@ test('Auction Sniper previews only the main account and binds its bid to the sam
   });
   t.after(() => plugin.stop());
   const token = () => draw().blocks.flatMap(block => block.items || []).find(button => button.action === 'apply').arg;
+  assert.match((await actions.get('check-connection')()).message, /Auction connection verified/);
+  assert.equal(socketCount, 1);
+  assert.deepEqual(emitted, []);
   assert.match((await actions.get('preview')()).message, /1 matching/);
   const old = token(); main = 'alt';
   assert.equal((await actions.get('apply')(old)).ok, false);
-  assert.equal(socketCount, 0);
+  assert.equal(socketCount, 1);
   main = 'main';
   await actions.get('preview')();
   assert.match((await actions.get('apply')(token())).message, /1 autobid/);

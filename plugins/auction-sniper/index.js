@@ -39,7 +39,7 @@ function quote(auction, user, prices, rules) {
 function start(ctx) {
   const prices = new PriceData();
   let preview, results = [], notice = '', working = '', revision = 0;
-  let stopped = false, connection;
+  let stopped = false, connection, verified;
   const data = ctx.data.get();
   let placed = Array.isArray(data?.placed) ? data.placed : [];
 
@@ -64,6 +64,13 @@ function start(ctx) {
     return reply.json;
   }
 
+  async function siteUser(account) {
+    const session = await read(account, '/api/auth/get-session');
+    const user = session?.user?.id || session?.session?.userId;
+    if (typeof user !== 'string' || !user) throw Error('Hub could not verify the main account’s current session.');
+    return user;
+  }
+
   const get = key => ctx.settings.get(key);
   function rules() {
     return { rate: get('tokensPerDollar'), percent: get('percent'), bidCap: Math.floor(get('bidCap')), budget: Math.floor(get('budget')) };
@@ -82,9 +89,7 @@ function start(ctx) {
     const account = main(), limits = rules();
     if (!Number.isFinite(limits.rate) || limits.rate <= 0) throw Error('Enter a positive token conversion.');
     await prices.load();
-    const session = await read(account, '/api/auth/get-session');
-    const user = session?.user?.id;
-    if (typeof user !== 'string' || !user) throw Error('Main account identity unavailable.');
+    const user = await siteUser(account);
     const options = new Map();
     for (const sort of ['endingSoon', 'newest']) {
       const listing = await read(account, '/api/auctions?page=1&limit=30&includeEnded=false&sort=' + sort);
@@ -115,6 +120,8 @@ function start(ctx) {
     if (ctx.accounts.busy(account.id) || ctx.accounts.wanted(account.id)) throw Error('Another plugin is using the main account.');
     const bids = plan.approved;
     if (!bids.length) return 'No eligible bids within the set budgets.';
+    if (await siteUser(account) !== user) throw Error('The main account session changed. Scan again.');
+    if (ctx.accounts.busy(account.id) || ctx.accounts.wanted(account.id)) throw Error('Another plugin is using the main account.');
     ctx.accounts.setBusy(account.id, 'Auction Sniper');
     let confirmed = 0;
     try {
@@ -168,6 +175,19 @@ function start(ctx) {
   }
 
   ctx.settings.onChange(() => { revision++; preview = undefined; });
+  ctx.panel.action('check-connection', () => run('Checking the Hub main account…', async () => {
+    verified = undefined;
+    const account = main();
+    await siteUser(account);
+    const socket = await ctx.socket(account.id);
+    try {
+      assertMain(account);
+      verified = { id: account.id, route: account.route };
+      return 'Main account connected through Hub. Auction connection verified.';
+    } finally {
+      socket.close();
+    }
+  }));
   ctx.panel.action('preview', () => run('Scanning auctions…', async () => {
     preview = await scan();
     return preview.rows.length + ' matching auctions.';
@@ -195,17 +215,25 @@ function start(ctx) {
   });
 
   ctx.panel.tab('Auction Sniper', () => {
-    const name = ctx.accounts.get(ctx.accounts.main())?.name;
+    const mainId = ctx.accounts.main();
+    const account = ctx.accounts.get(mainId);
+    const route = ctx.network.state().accounts.find(account => account.id === mainId)?.route;
+    const connected = account?.healthy && verified?.id === mainId && verified.route === route;
     const rows = preview?.rows || [];
     const approved = preview?.approved || [];
-    const items = working ? [{ action: 'stop', label: 'Stop', danger: true }] : [{ action: 'preview', label: 'Scan auctions', primary: true }];
+    const items = working ? [{ action: 'stop', label: 'Stop', danger: true }] : [
+      { action: 'preview', label: 'Scan auctions', primary: true },
+      { action: 'check-connection', label: 'Check Hub connection' },
+    ];
     if (!working && preview && approved.length && !ctx.power.practice() && Date.now() - preview.at <= PREVIEW_TTL) {
       items.push({ action: 'apply', arg: preview.token, label: 'Place previewed autobids',
         confirm: 'Place up to ' + approved.length + ' autobids on your main account for at most ' +
           count(approved.reduce((sum, bid) => sum + bid.ceiling, 0)) + ' tokens?' });
     }
     return { blocks: [
-      { type: 'notice', text: name ? 'Main account · ' + name : 'Set a main account in Hub Settings.' },
+      { type: 'notice', text: account ? 'Hub main account · ' + account.name
+        + (connected ? ' · Auction connection verified' : account.healthy ? ' · Uses your Hub session' : ' · Start this account in Hub')
+        : 'Set a main account in Hub Settings.' },
       { type: 'settings', keys },
       { type: 'buttons', items },
       ...(working || notice ? [{ type: 'notice', text: working || notice }] : []),

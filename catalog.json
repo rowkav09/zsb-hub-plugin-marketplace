@@ -355,14 +355,14 @@
       "overview": "Preview live auction quotes using ChunkyCheese PriceData and approve a batch. Optional scheduled scanning and autobids.",
       "integration": "Rechecks the seller, lot, main account balance and route. Confirms the site’s autobid receipt.",
       "operation": "Practice preview and optional live bids",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
       "source": "plugins/auction-sniper/",
-      "download": "downloads/auction-sniper-1.0.0.zip",
-      "sha256": "1870214a6b9d5483f1727c2ad7b5c84fe5e0cec711bfe9f240388a2ab7199092"
+      "download": "downloads/auction-sniper-1.0.1.zip",
+      "sha256": "b7bfb9192a9ab32190954c60776b3a38a69bb86200b0c5a41b06f4d10329b241"
     },
     {
       "id": "farm-value",

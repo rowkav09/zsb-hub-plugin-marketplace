@@ -36,7 +36,7 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | [Auto Skin Collection Completer](plugins/auto-skin-collection/) | Open owned cases first, buy to fill gaps, submit drops and claim rewards. Track per-account collection progress and estimate Armory costs using rarity odds. | [Download](downloads/auto-skin-collection-1.3.0.zip) |
 | [Auto Trade Favourites](plugins/auto-trade-favourites/) | Send favourites from farm accounts to a collector under value and trade caps. | [Download](downloads/auto-trade-favourites-1.0.0.zip) |
 | [Auto Sort SU](plugins/auto-sort-su/) | Sort skins into storage units with priority rules per account. | [Download](downloads/auto-sort-su-1.0.0.zip) |
-| [Auction Sniper](plugins/auction-sniper/) | Preview and place capped autobids from the Hub main account. | [Download](downloads/auction-sniper-1.0.0.zip) |
+| [Auction Sniper](plugins/auction-sniper/) | Preview and place capped autobids from the Hub main account. | [Download](downloads/auction-sniper-1.0.1.zip) |
 | [Farm Value](plugins/farm-value/) | Track aggregate inventory, cash and tokens on a line chart inside Hub. | [Download](downloads/farm-value-1.1.1.zip) |
 
 ## Bundled plugin directory
