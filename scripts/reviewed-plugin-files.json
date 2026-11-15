@@ -68,7 +68,7 @@
       "external-url"
     ],
     "reason": "Uses Electron, the installed Hub host and transport modules, and checks clipboard links against the official verification endpoint.",
-    "sha256": "7d5a05d52f395f1bbe3d26a4c504a51137ef59f1eae510a47ed0889905bb53fd"
+    "sha256": "18838d1bb131de24c8401888a15e6a7493d9340a9115620fdd6a08716ccfd0ed"
   },
   "zsb-account-setup/routed-session.js": {
     "rules": [
@@ -77,6 +77,6 @@
       "dynamic-code"
     ],
     "reason": "Uses the selected routed Chromium session for Case Clicker and reads the login token only from the signup window on that origin to hand the account to Hub.",
-    "sha256": "023c35762c444fdcf020c4f46c710a71bd86173ddc22336eef671ac0e4b5ee35"
+    "sha256": "58f712c11968994b81d12e895ee40c7be79907552141d9947b154b3f2791a06f"
   }
 }

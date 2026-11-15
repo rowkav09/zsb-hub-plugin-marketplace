@@ -391,14 +391,14 @@
       "overview": "Open Farming → Account Setup to complete signup and email verification, then add the account from Hub.",
       "integration": "Uses the official Case Clicker signup in a routed window and saves the account with the selected route pinned.",
       "operation": "Manual signup, verification and account import",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
-      "source": "https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.1.0",
-      "download": "https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.1.0/zsb-account-setup-1.1.0.zip",
-      "sha256": "ca7b378569a1b1dedc7acb88965906fd8fe14488eea5037f1f6451f142eede38"
+      "source": "https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.1.1",
+      "download": "https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.1.1/zsb-account-setup-1.1.1.zip",
+      "sha256": "0cab9c90580cf4da1e295532908d13690f567b66942acee86c781f17fb694254"
     }
   ]
 }
