@@ -1,7 +1,7 @@
 {
   "id": "auto-skin-collection",
   "name": "Auto Skin Collection Completer",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Submit eligible skins and claim collection rewards across selected farm accounts, with optional case-shop purchases and Armory credit redemptions.",
   "main": "index.js",
   "minCore": "1.2.8",
@@ -32,10 +32,10 @@
       ]
     },
     "armory": { "type": "boolean", "label": "Include Armory redemptions", "default": false,
-      "help": "Spend Armory credits on eligible collections. Open Armory cases individually." },
+      "help": "Estimate Armory credits and open Armory cases individually. A zero budget opens owned cases only." },
     "armoryCredits": { "type": "number", "label": "Maximum Armory credits per account per run", "default": 0, "min": 0, "max": 1000 },
     "opens": { "type": "number", "label": "Maximum cases opened per account per run", "default": 10, "min": 1, "max": 100 },
-    "spend": { "type": "number", "label": "Maximum case spend per account per run ($)", "default": 0, "min": 0 },
+    "spend": { "type": "number", "label": "Maximum case spend per account per run ($)", "help": "Start with owned cases. A zero budget prevents cash purchases.", "default": 0, "min": 0 },
     "reserve": { "type": "number", "label": "Cash reserve per account ($)", "default": 0, "min": 0 },
     "minutes": { "type": "number", "label": "Scheduled interval (minutes)", "default": 30, "min": 5, "max": 240 }
   }

@@ -6,7 +6,8 @@ const COLLECTION = '/api/skinCollection';
 const ARMORY = '/api/armory';
 const ARMORY_BUNDLE = 10;
 const fold = value => value.trim().toLowerCase();
-const baseName = value => fold(value.replace(/^StatTrak(?:™)?\s+|^Souvenir\s+/i, ''));
+const baseName = value => fold(value.replace(/^StatTrak(?:™)?\s+|^Souvenir\s+/i, '')
+  .replace(/\s*\((?:Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)$/i, ''));
 
 function limits(api) {
   const names = (api.get('collections') || []).map(fold);
@@ -14,11 +15,9 @@ function limits(api) {
   if (!all && !names.length) throw Error('Enter at least one exact collection name.');
   const useArmory = api.get('armory') === true;
   const credits = bounded(api.get('armoryCredits'), 0, 1000);
-  if (useArmory && !credits) throw Error('Set a positive Armory credit budget first.');
   const maxSkin = api.get('maxSkin'), spend = api.get('spend'), reserve = api.get('reserve');
   if (![maxSkin, spend, reserve].every(value => Number.isFinite(value) && value >= 0)) throw Error('Enter valid cost limits.');
   const source = api.get('source');
-  if (source === 'buy' && spend <= 0) throw Error('Set a positive purchase budget first.');
   return {
     all, names, useArmory, credits, maxSkin, source, spend, reserve, redeem: api.get('redeem') === true,
     submissions: bounded(api.get('submissions'), 1, 80, 25), opens: bounded(api.get('opens'), 1, 100, 10),
@@ -102,19 +101,6 @@ function inventoryRoom(profile) {
   return Math.max(0, profile.inventorySize - profile.inventoryCount);
 }
 
-function openingPlan(item, held, allowed, cashBudget, creditBudget, canBuy) {
-  if (!item || !allowed) return null;
-  const owned = Math.min(allowed, held);
-  const buy = canBuy && listedForCash(item)
-    ? Math.min(allowed - owned, Math.floor(cashBudget / item.price)) : 0;
-  const credits = !held && !buy && item.creditPrice && item.creditPrice <= creditBudget ? item.creditPrice : 0;
-  const opens = owned + buy + (credits ? Math.min(allowed, ARMORY_BUNDLE) : 0);
-  return opens ? {
-    caseId: item._id, type: item.type, opens, buy, price: buy ? item.price : 0, credits,
-    single: !!item.creditPrice,
-  } : null;
-}
-
 async function scanAccount(api, account, rules, plan) {
   const { id } = account;
   const name = account.name || id, route = api.route(id);
@@ -127,67 +113,79 @@ async function scanAccount(api, account, rules, plan) {
     }
   }
   const canOpen = rules.source !== 'inventory' || rules.useArmory;
-  const items = rules.all || canOpen ? await shop(api, id, route, canOpen) : new Map();
+  let items = new Map(), held = new Map();
+  try {
+    if (rules.all || canOpen) items = await shop(api, id, route, canOpen);
+    if (canOpen) held = await stock(api, id, route);
+  } catch (error) {
+    if (rules.all && !items.size) throw error;
+    plan.notes.push([name, error.message]);
+  }
   const targets = catalog.filter(entry => {
     const key = fold(entry.name), item = items.get(key);
     return rules.all ? listedForCash(item) || (rules.useArmory && !!item?.creditPrice) : rules.names.includes(key);
   });
-  let supply, openings = 0, spend = 0, credits = 0, submitted = 0;
-  for (const entry of targets) {
-    const current = await progress(api, id, route, entry.name);
-    const missing = current.groups.filter(group => !current.completed.has(group._id));
-    const submit = [], rows = [];
-    let skipped = 0;
-    for (const group of missing) {
-      if (!rules.maxSkin || submitted >= rules.submissions) break;
-      const items = await candidates(api, id, route, group, rules.maxSkin);
-      if (!items.length) { skipped++; continue; }
-      const value = Math.max(...items.map(item => item.price));
-      submit.push({ group, items });
-      submitted++;
-      rows.push([name, entry.name, 'Submit ' + group.name + ' · site chooses 1 of ' + items.length, money(value)]);
-    }
-    const claim = rules.redeem && submit.length === missing.length && !current.rewards.has(entry.name);
-    if (claim) rows.push([name, entry.name, 'Claim completed reward', '—']);
-    let open = null;
-    const item = items.get(fold(entry.name));
-    if (item && (rules.source !== 'inventory' || (rules.useArmory && item.creditPrice)) && missing.length > submit.length && openings < rules.opens) {
-      try {
-        if (!supply) {
-          const owned = await stock(api, id, route);
-          const me = await api.read(id, route, '/api/me');
-          supply = {
-            owned, room: inventoryRoom(me), rank: me?.rank?.id ?? me?.rank,
-            cash: Number.isFinite(me?.money) ? Math.max(0, me.money - rules.reserve) : 0,
-            credits: rules.useArmory ? await armoryCredits(api, id, route) : 0,
-          };
-        }
-        const allowed = Math.min(rules.opens - openings, Math.max(0, supply.room - openings));
-        const cashBudget = Math.max(0, Math.min(rules.spend, supply.cash) - spend);
-        const creditBudget = Math.max(0, Math.min(rules.credits, supply.credits) - credits);
-        const canBuy = rules.source === 'buy' && Number.isFinite(supply.rank)
-          && Number.isFinite(item.rankNeeded) && supply.rank >= item.rankNeeded;
-        open = openingPlan(item, supply.owned.get(item._id) || 0, allowed, cashBudget, creditBudget, canBuy);
-        if (open) {
-          openings += open.opens;
-          spend += open.buy * open.price;
-          credits += open.credits;
-          const detail = 'Open ' + open.opens + (open.single ? ' one at a time' : '');
-          if (open.credits) rows.push([name, entry.name, detail + ' · redeem 1 Armory bundle of 10', open.credits + ' credits']);
-          else rows.push([name, entry.name, detail + ' · buy ' + open.buy, money(open.buy * open.price)]);
-        }
-      } catch (error) {
-        plan.notes.push([name, entry.name + ' · ' + error.message]);
+  const entries = [];
+  let scannedSubmissions = 0, armoryMinimum = 0, armoryTargets = 0, armoryOwned = 0;
+  for (const { name: collection } of targets) {
+    try {
+      const current = await progress(api, id, route, collection);
+      const missing = current.groups.filter(group => !current.completed.has(group._id));
+      const submit = [];
+      for (const group of missing) {
+        if (!rules.maxSkin || scannedSubmissions >= rules.submissions) break;
+        const copies = await candidates(api, id, route, group, rules.maxSkin);
+        if (!copies.length) continue;
+        submit.push({ group, copies });
+        scannedSubmissions++;
+        const value = Math.max(...copies.map(item => item.price));
+        plan.rows.push([name, collection, 'Submit ' + group.name + ' · site chooses 1 of ' + copies.length, money(value)]);
       }
-    }
-    plan.rows.push(...rows);
-    if (submit.length || claim || open) plan.jobs.push({
-      id, name: entry.name, route, submit, claim, open, result: [name, entry.name],
-    });
-    if (skipped || (!submit.length && missing.length && !open)) {
-      plan.notes.push([name, entry.name + ' · ' + (missing.length - submit.length) + ' gaps remain after the planned submissions.']);
+      const claim = rules.redeem && !current.rewards.has(collection);
+      if (claim && submit.length === missing.length) plan.rows.push([name, collection, 'Claim completed reward', '—']);
+      const gap = missing.length - submit.length;
+      const quote = items.get(fold(collection));
+      const item = quote && (rules.source !== 'inventory' || (rules.useArmory && quote.creditPrice)) ? quote : null;
+      const count = held.get(item?._id) || 0;
+      const cash = rules.source === 'buy' && rules.spend > 0 && listedForCash(item);
+      const armory = rules.useArmory && !!item?.creditPrice && !cash;
+      if (gap && item) {
+        if (count) {
+          plan.rows.push([name, collection, count + ' owned · open first' + (item.creditPrice ? ' · one at a time' : ''), '—']);
+        }
+        if (cash) plan.rows.push([name, collection, 'Buy as needed after owned cases', money(item.price) + ' per case']);
+        if (armory) {
+          const minimum = Math.ceil(Math.max(0, gap - count) / ARMORY_BUNDLE) * item.creditPrice;
+          armoryMinimum += minimum;
+          armoryOwned += count;
+          armoryTargets++;
+          plan.rows.push([name, collection, 'Armory · ' + gap + ' gaps after planned submissions · ' + count + ' owned',
+            item.creditPrice + ' credits / 10 · ' + minimum + ' best-case minimum']);
+        }
+      }
+      const open = gap > 0 && item && (count || cash || (armory && item.creditPrice <= rules.credits));
+      if (submit.length || (claim && !missing.length) || open) entries.push({
+        name: collection, ids: new Set(current.groups.map(group => group._id)), submit, claim, item: open ? item : null,
+      });
+      if (gap && !open) plan.notes.push([name, collection + ' · ' + gap + ' gaps with no planned openings.']);
+    } catch (error) {
+      api.requireRunning();
+      plan.notes.push([name, collection + ' · ' + error.message]);
     }
   }
+  plan.notes.push([name, 'Per run · up to ' + rules.opens + ' opens and ' + rules.submissions + ' submissions · '
+    + money(rules.spend) + ' cash cap.']);
+  if (armoryTargets) {
+    try {
+      const balance = await armoryCredits(api, id, route);
+      const cap = Math.min(balance, rules.credits);
+      plan.notes.push([name, 'Armory · ' + armoryMinimum + ' credits best-case minimum after ' + armoryOwned
+        + ' owned Armory cases · ' + cap + ' credits available under this run’s cap. Duplicate and rare drops can increase the cost.']);
+    } catch (error) {
+      plan.notes.push([name, 'Armory balance unavailable · best-case minimum ' + armoryMinimum + ' credits.']);
+    }
+  }
+  if (entries.length) plan.jobs.push({ id, route, entries, result: [name] });
 }
 
 async function scan(api) {
@@ -215,79 +213,136 @@ async function readBack(read, test, message) {
   throw new Unconfirmed(message);
 }
 
-async function openCases(api, job, rules) {
-  const { id, route, open } = job;
-  const readStock = async () => (await stock(api, id, route)).get(open.caseId) || 0;
-  let held = await readStock();
-  const me = await api.read(id, route, '/api/me');
-  const planned = open.opens;
-  if (inventoryRoom(me) < planned) return 'Inventory room changed · openings skipped.';
-  if (open.credits && !held) {
-    const item = (await shop(api, id, route, true)).get(fold(job.name));
-    const balance = await armoryCredits(api, id, route);
-    if (item?._id !== open.caseId || item.type !== open.type || item.creditPrice !== open.credits
-      || balance < open.credits) return 'Armory price or balance changed · openings skipped.';
-    if (await api.write(id, route, ARMORY, 'PATCH', { id: open.caseId, type: open.type, amount: 1 }) === null) {
-      return 'The Armory refused the redemption.';
-    }
-    held = await readBack(readStock, count => count === ARMORY_BUNDLE, 'Armory redemption unconfirmed for ' + job.name + '. Check case stock.');
-    await readBack(() => armoryCredits(api, id, route), value => value === balance - open.credits,
-      'Armory credit balance unconfirmed for ' + job.name + '. Check the credit balance.');
+function checkGroups(entry, state) {
+  if (state.groups.length !== entry.ids.size || state.groups.some(group => !entry.ids.has(group._id))) {
+    throw Error('Collection contents changed. Run another preview.');
   }
-  if (open.buy) {
-    const item = (await shop(api, id, route, false)).get(fold(job.name));
-    const cost = open.buy * item?.price;
+}
+
+async function submitSkins(run, entry, drops) {
+  const { api, id, route, rules } = run;
+  if (rules.maxSkin && run.submitted < rules.submissions) {
+    const pending = entry.state.groups.filter(group => !entry.state.completed.has(group._id));
+    const approved = new Map(entry.submit.map(({ group, copies }) => [group._id, copies]));
+    // Quick opens report skins in an array. When names are present, inspect just the groups that dropped.
+    const identifiable = drops?.length && drops.every(drop => idOk(drop?.skingroupId) || typeof drop?.name === 'string');
+    const dropped = identifiable ? drops : null;
+    for (const group of pending) {
+      if (run.submitted >= rules.submissions) break;
+      const previewed = approved.get(group._id);
+      if (drops === undefined && !previewed) continue;
+      if (dropped && !dropped.some(drop => drop.skingroupId === group._id
+        || (typeof drop.name === 'string' && baseName(drop.name) === baseName(group.name)))) continue;
+      const live = await candidates(api, id, route, group, rules.maxSkin);
+      if (!live.length) continue;
+      if (drops === undefined) {
+        const prices = new Map(previewed.map(item => [item.id, item.price]));
+        if (live.some(item => !prices.has(item.id) || item.price > prices.get(item.id))) continue;
+      }
+      if (await api.write(id, route, COLLECTION, 'POST', { id: group._id, collection: entry.name }) === null) continue;
+      entry.state = await readBack(() => progress(api, id, route, entry.name),
+        value => value.completed.has(group._id), 'Collection submission unconfirmed for ' + group.name + '.');
+      run.submitted++;
+      checkGroups(entry, entry.state);
+    }
+  }
+  entry.complete = entry.state.groups.every(group => entry.state.completed.has(group._id));
+  if (entry.claim && entry.complete && !entry.state.rewards.has(entry.name)) {
+    if (await api.write(id, route, COLLECTION, 'PATCH', { collectionName: entry.name }) === null) {
+      entry.note = 'The site refused the reward claim';
+      return;
+    }
+    entry.state = await readBack(() => progress(api, id, route, entry.name),
+      value => value.rewards.has(entry.name), 'Collection reward unconfirmed for ' + entry.name + '.');
+    run.claimed++;
+  }
+}
+
+async function buyStock(run, entry, me, count, readStock) {
+  const { api, id, route, rules } = run;
+  const { item } = entry;
+  if (rules.source === 'buy' && rules.spend > run.cash && listedForCash(item)) {
+    const current = (await shop(api, id, route, false)).get(fold(entry.name));
     const rank = me?.rank?.id ?? me?.rank;
-    if (item?._id !== open.caseId || item.type !== open.type || !listedForCash(item) || !Number.isFinite(cost)
-      || item.price > open.price || !Number.isFinite(me?.money) || me.money - cost < rules.reserve
-      || !Number.isFinite(rank) || !Number.isFinite(item.rankNeeded) || rank < item.rankNeeded) return 'Shop quote or balance changed · openings skipped.';
-    if (await api.write(id, route, '/api/cases', 'POST', { id: open.caseId, type: open.type, amount: open.buy }) === null) {
-      return 'The site refused the case purchase.';
-    }
-    held = await readBack(readStock, count => count >= held + open.buy, 'Purchase unconfirmed for ' + job.name + '. Check case stock.');
+    if (current?._id !== item._id || current.type !== item.type || !listedForCash(current) || current.price > item.price
+      || !Number.isFinite(me?.money) || !Number.isFinite(rank) || !Number.isFinite(current.rankNeeded) || rank < current.rankNeeded) return 0;
+    const budget = Math.min(rules.spend - run.cash, me.money - rules.reserve);
+    const quantity = Math.min(count, Math.floor(budget / current.price));
+    if (quantity <= 0) return 0;
+    if (await api.write(id, route, '/api/cases', 'POST', { id: item._id, type: item.type, amount: quantity }) === null) return 0;
+    run.cash += quantity * current.price;
+    return readBack(readStock, total => total === quantity, 'Case purchase unconfirmed for ' + entry.name + '.');
   }
-  let opened = 0;
-  const want = Math.min(planned, held);
-  const perCall = open.single ? 1 : bounded(me.caseOpenCount, 1, 100, 1);
-  while (opened < want) {
-    const count = Math.min(perCall, want - opened);
-    const result = await api.write(id, route, '/api/open/' + open.type, 'POST', {
-      id: open.caseId, quickOpen: true, count: String(count), useEventTickets: false, caseOpenMultiplier: 1, autoOpen: false,
+  if (!rules.useArmory || !item.creditPrice || item.creditPrice > rules.credits - run.credits) return 0;
+  const current = (await shop(api, id, route, true)).get(fold(entry.name));
+  const balance = await armoryCredits(api, id, route);
+  if (current?._id !== item._id || current.type !== item.type || current.creditPrice !== item.creditPrice
+    || balance < item.creditPrice) return 0;
+  if (await api.write(id, route, ARMORY, 'PATCH', { id: item._id, type: item.type, amount: 1 }) === null) return 0;
+  run.credits += item.creditPrice;
+  const held = await readBack(readStock, total => total === ARMORY_BUNDLE, 'Armory redemption unconfirmed for ' + entry.name + '.');
+  await readBack(() => armoryCredits(api, id, route), credits => credits === balance - item.creditPrice,
+    'Armory credit balance unconfirmed for ' + entry.name + '.');
+  return held;
+}
+
+async function workThroughCases(run, entry, buy) {
+  const { api, id, route, rules } = run;
+  const { item } = entry;
+  if (!item || entry.complete || entry.note || run.opened >= rules.opens) return;
+  const readStock = async () => (await stock(api, id, route)).get(item._id) || 0;
+  let held = await readStock();
+  while (!entry.complete && run.opened < rules.opens && (!rules.maxSkin || run.submitted < rules.submissions)) {
+    if (!held && !buy) return;
+    const me = await api.read(id, route, '/api/me');
+    const room = inventoryRoom(me);
+    if (!room) return;
+    // Armory cases always open individually. Shop cases retain the account's normal batch size.
+    const perCall = item.creditPrice ? 1 : bounded(me.caseOpenCount, 1, 100, 1);
+    const count = Math.min(perCall, room, rules.opens - run.opened);
+    if (!held) held = await buyStock(run, entry, me, count, readStock);
+    if (!held) return;
+    const quantity = Math.min(held, count);
+    const drops = await api.write(id, route, '/api/open/' + item.type, 'POST', {
+      id: item._id, quickOpen: true, count: String(quantity), useEventTickets: false, caseOpenMultiplier: 1, autoOpen: false,
     });
-    if (result === null) return 'Opened ' + opened + ' · the site refused the next call.';
-    held = await readBack(readStock, total => total === held - count, 'Opening unconfirmed for ' + job.name + '. Check case stock.');
-    opened += count;
+    if (drops === null) {
+      entry.note = 'The site refused the opening';
+      return;
+    }
+    held = await readBack(readStock, total => total === held - quantity, 'Opening unconfirmed for ' + entry.name + '. Check case stock.');
+    run.opened += quantity;
+    await submitSkins(run, entry, Array.isArray(drops) ? drops : null);
   }
-  return 'Opened ' + opened + ' · next scan can submit new drops.';
 }
 
 async function apply(api, job, plan) {
   return api.lock([[job.id, job.route]], async () => {
-    const { id, route, name } = job;
-    let state = await progress(api, id, route, name);
-    let submitted = 0;
-    for (const { group, items } of job.submit) {
-      if (state.completed.has(group._id) || !state.groups.some(current => current._id === group._id)) continue;
-      const live = await candidates(api, id, route, group, plan.rules.maxSkin);
-      const approved = new Map(items.map(item => [item.id, item.price]));
-      if (!live.length || live.some(item => !approved.has(item.id) || item.price > approved.get(item.id))) continue;
-      if (await api.write(id, route, COLLECTION, 'POST', { id: group._id, collection: name }) === null) continue;
-      state = await readBack(() => progress(api, id, route, name),
-        value => value.completed.has(group._id), 'Collection submission unconfirmed for ' + group.name + '.');
-      submitted++;
-    }
-    const complete = state.groups.every(group => state.completed.has(group._id));
-    let claimed = false;
-    if (job.claim && complete && !state.rewards.has(name)) {
-      if (await api.write(id, route, COLLECTION, 'PATCH', { collectionName: name }) !== null) {
-        await readBack(() => progress(api, id, route, name),
-          value => value.rewards.has(name), 'Collection reward unconfirmed for ' + name + '.');
-        claimed = true;
+    const run = { api, id: job.id, route: job.route, rules: plan.rules, submitted: 0, claimed: 0, opened: 0, cash: 0, credits: 0 };
+    const entries = job.entries.map(entry => ({ ...entry }));
+    async function attempt(entry, action) {
+      if (entry.note) return;
+      try {
+        await action();
+      } catch (error) {
+        if (error instanceof Unconfirmed) throw error;
+        api.requireRunning();
+        entry.note = error.message;
       }
     }
-    const result = [submitted + ' submitted', ...(claimed ? ['reward claimed'] : [])];
-    if (!complete && job.open) result.push(await openCases(api, job, plan.rules));
-    return result.join(' · ');
+    for (const entry of entries) {
+      await attempt(entry, async () => {
+        entry.state = await progress(api, job.id, job.route, entry.name);
+        checkGroups(entry, entry.state);
+        await submitSkins(run, entry);
+      });
+    }
+    // Check owned cases for every target before charging either currency.
+    for (const entry of entries) await attempt(entry, () => workThroughCases(run, entry, false));
+    for (const entry of entries) await attempt(entry, () => workThroughCases(run, entry, true));
+    const summary = [run.opened + ' opened', run.submitted + ' submitted', run.claimed + ' claimed', money(run.cash), run.credits + ' Armory credits'];
+    for (const entry of entries) if (entry.note) summary.push(entry.name + ' · ' + entry.note);
+    return summary.join(' · ');
   });
 }
 
@@ -297,9 +352,11 @@ module.exports = {
     stop = createBatch(ctx, {
       title: 'Auto Skin Collection Completer', tab: 'Skin Collections',
       keys: ['runMode', 'on', 'accounts', 'targets', 'collections', 'maxSkin', 'submissions', 'redeem', 'source', 'armory', 'armoryCredits', 'opens', 'spend', 'reserve', 'minutes'],
-      columns: ['Account', 'Collection', 'Operation', 'Maximum value'], resultColumns: ['Account', 'Collection'],
+      columns: ['Account', 'Collection', 'Operation', 'Maximum value'], resultColumns: ['Account'],
       applyLabel: 'Run previewed collection jobs',
-      confirm: plan => 'Run ' + plan.jobs.length + ' collection jobs? Submissions consume skins. Purchases and openings follow the preview.',
+      confirm: plan => 'Work on ' + plan.jobs.length + ' account(s)? Submit eligible existing skins and new drops, then claim completed rewards. '
+        + 'Per account, open up to ' + plan.rules.opens + ' cases and spend up to ' + money(plan.rules.spend)
+        + ' plus ' + plan.rules.credits + ' Armory credits within the enabled sources.',
       scan, apply,
     });
   },

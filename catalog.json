@@ -280,17 +280,17 @@
       "kind": "community",
       "category": "Farming",
       "summary": "Finish named collections or work through everything available from the case shop and Armory.",
-      "overview": "Plan submissions and rewards, with separate budgets for cash and optional Armory credits. Opens Armory cases individually.",
+      "overview": "Open owned cases first, buy to fill gaps, submit new drops and claim rewards in the same run. Preview an Armory credit estimate.",
       "integration": "Reads collection progress and inventory on each Hub route. Confirms submissions and case-stock changes.",
       "operation": "Manual preview and optional scheduled runs",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
       "source": "plugins/auto-skin-collection/",
-      "download": "downloads/auto-skin-collection-1.1.0.zip",
-      "sha256": "86ffe687da9b10d0226864c3cfc6a339440bdb4540ca611c72fa92e9502a07c0"
+      "download": "downloads/auto-skin-collection-1.2.0.zip",
+      "sha256": "d3de9b41d61b585830a66479c94a38c66f0c38e5e4f0cf0848b1c7a6a0b8cdf5"
     },
     {
       "id": "auto-trade-favourites",

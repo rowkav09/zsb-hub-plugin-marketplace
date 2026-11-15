@@ -162,9 +162,9 @@ test('Collection buying is capped and openings are verified without auto-sell', 
     return ok([]);
   });
   await f.action('preview');
-  assert.deepEqual(f.preview(), [['A', name, 'Open 3 · buy 2', '$8']]);
+  assert.deepEqual(f.preview(), [['A', name, '1 owned · open first', '—'], ['A', name, 'Buy as needed after owned cases', '$4 per case']]);
   assert.equal((await f.action('apply', f.approval().arg)).ok, true);
-  assert.deepEqual(f.posts.map(post => post.body.amount ?? post.body.count), [2, '2', '1']);
+  assert.deepEqual(f.posts.map(post => post.body.amount ?? post.body.count), ['1', 2, '2']);
   assert.equal(held, 0);
 });
 
@@ -172,7 +172,7 @@ test('All purchasable collections uses a separate Armory budget and opens Armory
   const group = { _id: oid('a'), name: 'Missing skin' };
   const standard = { _id: oid('b'), name: 'Cash Case', price: 2, rankNeeded: 1 };
   const armory = { id: oid('c'), name: 'Armory Collection', type: 'collectionCase', creditPrice: 4 };
-  const held = new Map();
+  const held = new Map([[armory.id, 1]]);
   let credits = 4, mustReadStock = false;
   const f = hub(t, 'auto-skin-collection', {
     targets: 'purchasable', source: 'buy', spend: 4, armory: true, armoryCredits: 4, opens: 5,
@@ -210,15 +210,79 @@ test('All purchasable collections uses a separate Armory budget and opens Armory
     return ok([]);
   });
   await f.action('preview');
-  assert.deepEqual(f.preview().map(row => [row[1], row[3]]), [[standard.name, '$4'], [armory.name, '4 credits']]);
+  assert.deepEqual(f.preview().map(row => [row[1], row[3]]), [[standard.name, '$2 per case'], [armory.name, '—'], [armory.name, '4 credits / 10 · 0 best-case minimum']]);
   assert.equal(f.posts.length, 0);
   const result = await f.action('apply', f.approval().arg);
   assert.equal(result.ok, true, result.error);
-  assert.deepEqual(f.posts.filter(post => post.url.startsWith('/api/open')).map(post => post.body.count), ['2', '1', '1', '1']);
-  assert.equal(held.get(armory.id), 7);
+  assert.deepEqual(f.posts.filter(post => post.url.startsWith('/api/open')).map(post => post.body.count), ['1', '2', '1', '1']);
+  assert.equal(f.posts[0].body.id, armory.id);
+  assert.equal(held.get(armory.id), 8);
   await f.action('preview');
-  assert(f.preview().some(row => row[1] === armory.name && row[2].startsWith('Open 3 one at a time')));
+  assert(f.preview().some(row => row[1] === armory.name && row[2].startsWith('8 owned · open first')));
   assert.equal(f.posts.filter(post => post.method === 'PATCH').length, 1);
+});
+
+test('Collection run submits fresh drops, then claims the reward without buying or opening extra cases', async t => {
+  const name = 'Armory Collection';
+  const item = { id: oid('c'), name, creditPrice: 4, type: 'collectionCase' };
+  const groups = [{ _id: oid('a'), name: 'First skin' }, { _id: oid('b'), name: 'Second skin' }];
+  const state = { submittedSkingroupIds: [], redeemedCollectionRewards: [] };
+  const drops = new Map();
+  let stock = 1, credits = 20, opened = 0;
+  const f = hub(t, 'auto-skin-collection', {
+    collections: [name], armory: true, armoryCredits: 20, maxSkin: 20, opens: 100,
+  }, (_, url, opts) => {
+    if (url.pathname === '/') return { kind: 'ok', body: '{"buildId":"fixture"}' };
+    if (url.pathname.includes('/cases/')) return ok({ pageProps: { cases: [] } });
+    if (url.pathname.endsWith('/armory.json')) return ok({ pageProps: { armoryRewards: [item] } });
+    if (url.searchParams.has('all')) return ok({ skinCollections: [{ name }] });
+    if (url.pathname === '/api/skinCollection') {
+      if (opts.method === 'POST') {
+        assert(drops.delete(opts.body.id));
+        state.submittedSkingroupIds.push(opts.body.id);
+      }
+      if (opts.method === 'PATCH') {
+        assert.equal(state.submittedSkingroupIds.length, 2);
+        state.redeemedCollectionRewards.push(opts.body.collectionName);
+      }
+      return ok({ skinCollectionSkingroups: groups, userSkinCollection: state });
+    }
+    if (url.pathname === '/api/me') return ok({ money: 20, rank: 5, caseOpenCount: 20, inventorySize: 50, inventoryCount: 0 });
+    if (url.pathname === '/api/cases') return ok([{ _id: item.id, amount: stock }]);
+    if (url.pathname === '/api/inventory') {
+      const drop = drops.get(url.searchParams.get('skingroupId'));
+      return inventory(drop ? [drop] : []);
+    }
+    if (url.pathname === '/api/armory') {
+      if (opts.method === 'PATCH') {
+        assert.equal(stock, 0);
+        assert.equal(state.submittedSkingroupIds.length, 1);
+        assert.equal(opts.body.amount, 1);
+        credits -= 4;
+        stock += 10;
+      }
+      return ok({ credits });
+    }
+    assert.equal(url.pathname, '/api/open/collectionCase');
+    assert.equal(opts.body.count, '1');
+    const group = groups[opened++];
+    const drop = skin(opened === 1 ? 'd' : 'e', group.name, { skingroupId: group._id });
+    drops.set(group._id, drop);
+    stock--;
+    return ok([drop]);
+  });
+  await f.action('preview');
+  assert(f.preview().some(row => row[3] === '4 credits / 10 · 4 best-case minimum'));
+  assert.equal(f.posts.length, 0);
+  assert.equal((await f.action('apply', f.approval().arg)).ok, true);
+  assert.deepEqual(f.posts.map(post => [post.method, post.url.split('?')[0]]), [
+    ['POST', '/api/open/collectionCase'], ['POST', '/api/skinCollection'],
+    ['PATCH', '/api/armory'], ['POST', '/api/open/collectionCase'],
+    ['POST', '/api/skinCollection'], ['PATCH', '/api/skinCollection'],
+  ]);
+  assert.equal(opened, 2);
+  assert.equal(stock, 9);
+  assert.deepEqual(state.redeemedCollectionRewards, [name]);
 });
 
 test('Favourites trades send exact approved IDs to the selected account and verify receipt', async t => {
