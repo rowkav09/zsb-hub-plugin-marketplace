@@ -53,5 +53,30 @@
     ],
     "reason": "Mounts the local history chart only in the installed Hub desktop panel using serialized numeric samples.",
     "sha256": "102864f275d317e140e28ab865dfffed780017ceed4e10b7119195a20deb0887"
+  },
+  "zsb-account-setup/bridge.js": {
+    "rules": [
+      "privileged-module"
+    ],
+    "reason": "Runs the optional pairing bridge on 127.0.0.1 with a random bearer secret and four fixed commands.",
+    "sha256": "651cf8635a9aac37cd0207ae1c77b33ded77c29937729b6565bd260f0894307c"
+  },
+  "zsb-account-setup/index.js": {
+    "rules": [
+      "privileged-module",
+      "dynamic-module",
+      "external-url"
+    ],
+    "reason": "Uses Electron, the installed Hub host and transport modules, and checks clipboard links against the official verification endpoint.",
+    "sha256": "7d5a05d52f395f1bbe3d26a4c504a51137ef59f1eae510a47ed0889905bb53fd"
+  },
+  "zsb-account-setup/routed-session.js": {
+    "rules": [
+      "external-url",
+      "external-network",
+      "dynamic-code"
+    ],
+    "reason": "Uses the selected routed Chromium session for Case Clicker and reads the login token only from the signup window on that origin to hand the account to Hub.",
+    "sha256": "023c35762c444fdcf020c4f46c710a71bd86173ddc22336eef671ac0e4b5ee35"
   }
 }

@@ -38,6 +38,7 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | [Auto Sort SU](plugins/auto-sort-su/) | Sort skins into storage units with priority rules per account. | [Download](downloads/auto-sort-su-1.0.0.zip) |
 | [Auction Sniper](plugins/auction-sniper/) | Preview and place capped autobids from the Hub main account. | [Download](downloads/auction-sniper-1.0.1.zip) |
 | [Farm Value](plugins/farm-value/) | Track aggregate inventory, cash and tokens on a line chart inside Hub. | [Download](downloads/farm-value-1.1.1.zip) |
+| [Routed Account Setup](https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.1.0) | Create a new account through its farm route, verify email and add it to Hub. External release for Hub 1.2.8 and 1.2.11. | [Download](https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.1.0/zsb-account-setup-1.1.0.zip) |
 
 ## Bundled plugin directory
 

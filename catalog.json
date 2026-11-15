@@ -381,6 +381,24 @@
       "source": "plugins/farm-value/",
       "download": "downloads/farm-value-1.1.1.zip",
       "sha256": "5bfef8ec98becac566eda703bfc2f1743bd0a0598af76b4edb4c05dfd3f58613"
+    },
+    {
+      "id": "zsb-account-setup",
+      "name": "Routed Account Setup",
+      "kind": "community",
+      "category": "Farming",
+      "summary": "Create and verify an alt through its farming proxy or WireGuard route. Supports Hub 1.2.8 and 1.2.11.",
+      "overview": "Open Farming → Account Setup to complete signup and email verification, then add the account from Hub.",
+      "integration": "Uses the official Case Clicker signup in a routed window and saves the account with the selected route pinned.",
+      "operation": "Manual signup, verification and account import",
+      "version": "1.1.0",
+      "minCore": "1.2.8",
+      "defaultEnabled": false,
+      "author": "Rowan Kavanagh",
+      "license": "MIT",
+      "source": "https://github.com/rowkav09/zsb-hub-account-setup/tree/v1.1.0",
+      "download": "https://github.com/rowkav09/zsb-hub-account-setup/releases/download/v1.1.0/zsb-account-setup-1.1.0.zip",
+      "sha256": "ca7b378569a1b1dedc7acb88965906fd8fe14488eea5037f1f6451f142eede38"
     }
   ]
 }
