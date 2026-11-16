@@ -34,7 +34,7 @@ This is a community feed served from this GitHub repository. The Hub's official 
 | [Skillmap Presets](plugins/skillmap-presets/) | Preview and apply skill builds across farm accounts within per-account limits. Requires Hub 1.2.8+. | [Download](downloads/skillmap-presets-1.0.2.zip) |
 | [Auto Grind](plugins/auto-grind/) | Level accounts toward 5,000 Premier with repeated case opening, staged skillmaps and cash reserved for the next unlocked skill. | [Download](downloads/auto-grind-1.0.0.zip) |
 | [Auto Forge](plugins/auto-forge/) | Pick skins from inventory, approve a capped batch, and optionally chain upgrades to Legendary. Requires Hub 1.2.8+. | [Download](downloads/auto-forge-1.1.1.zip) |
-| [Auto Skin Collection Completer](plugins/auto-skin-collection/) | Run a single budget-limited batch with favourite protection and live progress bars. Browse all collections and Armory credit estimates. | [Download](downloads/auto-skin-collection-1.5.0.zip) |
+| [Auto Skin Collection Completer](plugins/auto-skin-collection/) | Run a single budget-limited batch with favourite protection and live progress bars. Browse all collections and Armory credit estimates. | [Download](downloads/auto-skin-collection-1.5.1.zip) |
 | [Auto Trade Favourites](plugins/auto-trade-favourites/) | Send favourites from farm accounts to a collector under value and trade caps. | [Download](downloads/auto-trade-favourites-1.0.0.zip) |
 | [Auto Sort SU](plugins/auto-sort-su/) | Sort skins into storage units with priority rules per account. | [Download](downloads/auto-sort-su-1.0.0.zip) |
 | [Auction Sniper](plugins/auction-sniper/) | Preview and place capped autobids from the Hub main account. | [Download](downloads/auction-sniper-1.0.1.zip) |

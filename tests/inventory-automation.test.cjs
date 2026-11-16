@@ -22,14 +22,16 @@ function hub(t, id, options, transport) {
   const values = { runMode: 'live', on: false, ...Object.fromEntries(Object.entries(settings).map(([k, v]) => [k, v.default])),
     ...(options.collections ? { targets: 'named' } : {}), ...options };
   const actions = new Map(), locks = new Set(), posts = [];
+  const requests = new Map();
   let draw, onChange, callback, data = {};
   const routes = new Map(accounts.map(a => [a.id, 'route-' + a.id]));
   const ctx = {
     accounts: {
       list: () => accounts,
       get: id => accounts.find(a => a.id === id),
-      busy: () => null,
-      wanted: () => null,
+      busy: id => options.busy?.get(id) || null,
+      wanted: id => options.wanted?.get(id) || null,
+      want: (id, label) => label ? requests.set(id, label) : requests.delete(id),
       setBusy: (id, label) => label ? locks.add(id) : locks.delete(id),
     },
     network: { state: () => ({ accounts: accounts.map(a => ({ id: a.id, route: routes.get(a.id) })) }) },
@@ -61,7 +63,7 @@ function hub(t, id, options, transport) {
   t.after(() => { plugin.stop(); rmSync(dir, { force: true, recursive: true }); });
   const action = (name, args) => actions.get(name)(args);
   return {
-    action, posts, locks, routes, callback, change: ctx.settings.set, data: () => data, blocks: () => draw().blocks,
+    action, posts, locks, routes, requests, callback, change: ctx.settings.set, data: () => data, blocks: () => draw().blocks,
     preview: () => draw().blocks.find(block => block.type === 'table')?.rows,
     approval: () => draw().blocks.filter(b => b.type === 'buttons').flatMap(b => b.items).find(b => b.action === 'apply'),
   };
@@ -173,6 +175,54 @@ test('Collection scans include favourited duplicates on later pages and recheck 
   toggled = true;
   assert.equal((await f.action('apply', f.approval().arg)).ok, true);
   assert.equal(f.posts.length, 0);
+});
+
+test('Collection preview reads a busy account and the approved run requests a handoff before writing', async t => {
+  const name = 'Fixture Case', group = { _id: oid('a'), name: 'Missing skin' };
+  const busy = new Map([['a', { plugin: 'armory', what: 'star farming' }]]);
+  const wanted = new Map();
+  const state = { submittedSkingroupIds: [], redeemedCollectionRewards: [] };
+  const f = hub(t, 'auto-skin-collection', { collections: [name], maxSkin: 10, redeem: false, busy, wanted }, (_, url, opts) => {
+    if (url.pathname === '/api/inventory') return inventory([skin('d', group.name)]);
+    if (url.searchParams.has('all')) return ok({ skinCollections: [{ name }] });
+    if (opts.method === 'POST') {
+      assert.equal(busy.size, 0);
+      assert.equal(f.requests.size, 0, 'own busy mark replaces the handoff request');
+      state.submittedSkingroupIds.push(opts.body.id);
+    }
+    return ok({ skinCollectionSkingroups: [group], userSkinCollection: state });
+  });
+  assert.equal((await f.action('preview')).ok, true);
+  const run = f.action('apply', f.approval().arg);
+  assert.equal(f.requests.get('a'), 'Collection Completer');
+  assert.match(JSON.stringify(f.blocks()), /Waiting for account · star farming/);
+  assert.equal(f.posts.length, 0);
+  wanted.set('a', { plugin: 'trader', what: 'later request' });
+  busy.clear();
+  assert.match((await run).message, /1 of 1 jobs processed/);
+  assert.deepEqual(f.posts.map(post => post.body.id), [group._id]);
+  assert.equal(f.requests.size, 0);
+  assert.equal(f.locks.size, 0);
+});
+
+test('Stopping a queued Collection Completer run clears its request without writing', async t => {
+  const name = 'Fixture Case', group = { _id: oid('a'), name: 'Missing skin' };
+  const busy = new Map([['a', { plugin: 'armory', what: 'star farming' }]]);
+  const f = hub(t, 'auto-skin-collection', { collections: [name], maxSkin: 10, busy }, (_, url) => {
+    if (url.pathname === '/api/inventory') return inventory([skin('d', group.name)]);
+    if (url.searchParams.has('all')) return ok({ skinCollections: [{ name }] });
+    return ok({ skinCollectionSkingroups: [group], userSkinCollection: null });
+  });
+  await f.action('preview');
+  const run = f.action('apply', f.approval().arg);
+  assert.equal(f.requests.size, 1);
+  f.action('stop');
+  await run;
+  assert.equal(f.posts.length, 0);
+  assert.equal(f.requests.size, 0);
+  assert.equal(f.locks.size, 0);
+  assert.equal(busy.size, 1);
+  assert.match(JSON.stringify(f.blocks()), /Stopped/);
 });
 
 test('Collection progress shows all collection cards and all Hub accounts independently of run selection', async t => {

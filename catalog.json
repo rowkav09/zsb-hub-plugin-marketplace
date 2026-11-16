@@ -299,16 +299,16 @@
       "category": "Farming",
       "summary": "Finish named collections or work through everything available from the case shop and Armory.",
       "overview": "Run a single budget-limited batch that opens owned cases first, submits eligible drops and claims rewards. Track completion and spending in live progress bars, and browse all collections by account.",
-      "integration": "Scans all matching inventory copies to protect favourites, then checks collection progress and verifies writes on each Hub route.",
+      "integration": "Requests a handoff from other Hub plugins before writing. Scans matching inventory copies to protect favourites and verifies progress on the approved account route.",
       "operation": "Read-only fleet overview and confirmed one-time runs",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "minCore": "1.2.8",
       "defaultEnabled": false,
       "author": "Rowan Kavanagh",
       "license": "MIT",
       "source": "plugins/auto-skin-collection/",
-      "download": "downloads/auto-skin-collection-1.5.0.zip",
-      "sha256": "b90c11e70f15c091b43eb8eff96b93d66aa931b5c04a4dfc99474cc281a6f24e"
+      "download": "downloads/auto-skin-collection-1.5.1.zip",
+      "sha256": "008b6feb19223b3c91731cfc7304132cf65d7ac9b395db068925000993e4ef43"
     },
     {
       "id": "auto-trade-favourites",

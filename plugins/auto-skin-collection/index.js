@@ -4,6 +4,7 @@ const { availablePrice, bounded, createBatch, idOk, money, notFavorite, Unconfir
 
 const { startOverview } = require('./overview');
 const { createRunProgress } = require('./run-progress');
+const { createHandoff } = require('./handoff');
 
 const COLLECTION = '/api/skinCollection';
 const ARMORY = '/api/armory';
@@ -388,37 +389,35 @@ async function workThroughCases(api, run, entry, buy) {
 
 async function apply(api, job, run) {
   const { entries } = run;
-  return api.lock([[job.id, job.route]], async () => {
-    async function attempt(entry, phase, action) {
-      if (entry.note) return;
-      run.current = entry;
-      run.phase = phase;
-      try {
-        await action();
-      } catch (error) {
-        if (error instanceof Unconfirmed) throw error;
-        api.requireRunning();
-        entry.note = error.message;
-      }
+  async function attempt(entry, phase, action) {
+    if (entry.note) return;
+    run.current = entry;
+    run.phase = phase;
+    try {
+      await action();
+    } catch (error) {
+      if (error instanceof Unconfirmed) throw error;
+      api.requireRunning();
+      entry.note = error.message;
     }
-    for (const entry of entries) {
-      await attempt(entry, 'Checking inventory', async () => {
-        entry.state = await progress(api, job.id, job.route, entry.name);
-        checkGroups(entry, entry.state);
-        await submitSkins(api, run, entry);
-      });
-    }
-    // Check owned cases for every target before charging either currency.
-    for (const entry of entries) await attempt(entry, 'Checking owned cases', () => workThroughCases(api, run, entry, false));
-    for (const entry of entries) await attempt(entry, 'Checking budget and stock', () => workThroughCases(api, run, entry, true));
-    const summary = [run.opened + ' opened', run.submitted + ' submitted', run.claimed + ' claimed',
-      money(run.cashCents / 100), run.credits + ' Armory credits'];
-    for (const entry of entries) {
-      if (entry.note) summary.push(entry.name + ' · ' + entry.note);
-      if (entry.protectedGroups.size) summary.push(entry.name + ' · ' + entry.protectedGroups.size + ' group(s) skipped for favourite protection');
-    }
-    return summary.join(' · ');
-  });
+  }
+  for (const entry of entries) {
+    await attempt(entry, 'Checking inventory', async () => {
+      entry.state = await progress(api, job.id, job.route, entry.name);
+      checkGroups(entry, entry.state);
+      await submitSkins(api, run, entry);
+    });
+  }
+  // Check owned cases for every target before charging either currency.
+  for (const entry of entries) await attempt(entry, 'Checking owned cases', () => workThroughCases(api, run, entry, false));
+  for (const entry of entries) await attempt(entry, 'Checking budget and stock', () => workThroughCases(api, run, entry, true));
+  const summary = [run.opened + ' opened', run.submitted + ' submitted', run.claimed + ' claimed',
+    money(run.cashCents / 100), run.credits + ' Armory credits'];
+  for (const entry of entries) {
+    if (entry.note) summary.push(entry.name + ' · ' + entry.note);
+    if (entry.protectedGroups.size) summary.push(entry.name + ' · ' + entry.protectedGroups.size + ' group(s) skipped for favourite protection');
+  }
+  return summary.join(' · ');
 }
 
 let stop;
@@ -428,6 +427,7 @@ module.exports = {
     let needsRefresh = false;
     let applying = false;
     const progressDisplay = createRunProgress();
+    const handoff = createHandoff(ctx);
     const overview = startOverview(ctx, { shop, stock, progress, armoryCredits });
     ctx.panel.action('show-collection-progress', () => {
       view = 'progress';
@@ -475,6 +475,7 @@ module.exports = {
     // Reuse the approval and review flow without the shared runner's schedule.
     const stopBatch = createBatch({
       ...ctx, get stopping() { return ctx.stopping; }, panel,
+      accounts: handoff.accounts,
       every() {},
       power: { practice: () => false },
       settings: { ...ctx.settings, get: key => key === 'on' ? false : ctx.settings.get(key) },
@@ -490,7 +491,7 @@ module.exports = {
       async apply(api, job, plan) {
         const run = progressDisplay.begin(plan, job);
         try {
-          const summary = await apply(api, job, run);
+          const summary = await handoff.withAccount(api, job, run, () => apply(api, job, run));
           run.phase = 'Finished';
           return summary;
         } catch (error) {
