@@ -1,14 +1,12 @@
 'use strict';
 
 const LABEL = 'Collection Completer';
-const HANDOFF_MS = 15 * 60_000;
 
 function createHandoff(ctx) {
   let held = null;
 
   async function withAccount(api, job, run, work) {
     const { id, route } = job;
-    const deadline = Date.now() + HANDOFF_MS;
     let requested = false;
     try {
       for (;;) {
@@ -27,7 +25,6 @@ function createHandoff(ctx) {
           return await work();
         }
         const reason = (busy || earlier).what || 'another plugin';
-        if (Date.now() >= deadline) throw Error('Handoff timed out · ' + reason + ' still has priority. Preview again to retry.');
         run.phase = 'Waiting for account · ' + reason;
         if (!earlier && !requested) {
           ctx.accounts.want(id, LABEL);

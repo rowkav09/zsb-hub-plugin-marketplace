@@ -7,7 +7,7 @@ Work through skin collections on farm accounts from **Farming → Skin Collectio
 3. Turn on **Include Armory redemptions** if wanted. A zero credit budget lets the run open owned Armory cases.
 4. Select **Preview**, review the per-account plan, and confirm **Run previewed jobs once**. **Run progress** shows the active collection, account completion, and cash and Armory credits used as the run proceeds.
 
-When Armory or another plugin is using an account, the approved run requests a handoff and shows what it is waiting for. It starts after the account is released and rechecks the approved plan on the same route. **Stop** cancels a queued handoff. A handoff that takes more than 15 minutes is reported with the activity holding the account.
+When Armory or another plugin is using an account, the approved run requests a handoff and shows what it is waiting for. It starts after the account is released and rechecks the approved plan on the same route. Armory can hold an account until its current turn ends. **Stop** cancels a queued handoff.
 
 ## Collection progress
 
@@ -21,4 +21,4 @@ Each run submits eligible inventory skins, opens owned cases across the selected
 
 The Armory sells bundles of ten. The preview shows the live bundle price, owned case count and a best-case credit minimum. That minimum assumes each needed opening drops a different eligible missing skin. Duplicate and rare drops can raise the cost. Armory openings run one at a time, while standard shop cases use the account's normal batch size. Interrupted or unconfirmed writes require review before automation can continue.
 
-[Download the plugin](../../downloads/auto-skin-collection-1.5.1.zip) · [ChunkyCheese's Auto Submit reference](https://discord.com/channels/1042469313820495952/1480822553173037156/1480822865153491065)
+[Download the plugin](../../downloads/auto-skin-collection-1.5.2.zip) · [ChunkyCheese's Auto Submit reference](https://discord.com/channels/1042469313820495952/1480822553173037156/1480822865153491065)

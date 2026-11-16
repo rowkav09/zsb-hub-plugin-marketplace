@@ -1,7 +1,7 @@
 {
   "id": "auto-skin-collection",
   "name": "Auto Skin Collection Completer",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Submit eligible skins and claim collection rewards across selected farm accounts, with optional case-shop purchases and Armory credit redemptions.",
   "main": "index.js",
   "minCore": "1.2.8",

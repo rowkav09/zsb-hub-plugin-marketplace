@@ -177,7 +177,8 @@ test('Collection scans include favourited duplicates on later pages and recheck 
   assert.equal(f.posts.length, 0);
 });
 
-test('Collection preview reads a busy account and the approved run requests a handoff before writing', async t => {
+test('Collection preview reads a busy account and an approved run waits through a long Armory turn', async t => {
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: Date.now() });
   const name = 'Fixture Case', group = { _id: oid('a'), name: 'Missing skin' };
   const busy = new Map([['a', { plugin: 'armory', what: 'star farming' }]]);
   const wanted = new Map();
@@ -198,7 +199,12 @@ test('Collection preview reads a busy account and the approved run requests a ha
   assert.match(JSON.stringify(f.blocks()), /Waiting for account · star farming/);
   assert.equal(f.posts.length, 0);
   wanted.set('a', { plugin: 'trader', what: 'later request' });
+  t.mock.timers.tick(20 * 60_000);
+  await Promise.resolve();
+  assert.equal(f.requests.get('a'), 'Collection Completer', 'the handoff stays queued through a full Armory turn');
+  assert.equal(f.posts.length, 0);
   busy.clear();
+  t.mock.timers.tick(500);
   assert.match((await run).message, /1 of 1 jobs processed/);
   assert.deepEqual(f.posts.map(post => post.body.id), [group._id]);
   assert.equal(f.requests.size, 0);
