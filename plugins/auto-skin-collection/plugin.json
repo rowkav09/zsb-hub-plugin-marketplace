@@ -1,7 +1,7 @@
 {
   "id": "auto-skin-collection",
   "name": "Auto Skin Collection Completer",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Submit eligible skins and claim collection rewards across selected farm accounts, with optional case-shop purchases and Armory credit redemptions.",
   "main": "index.js",
   "minCore": "1.2.8",
@@ -20,7 +20,6 @@
     },
     "collections": { "type": "tags", "label": "Exact collection names", "placeholder": "Prisma Case", "help": "Use names shown on the site's Skin Collection page." },
     "maxSkin": { "type": "number", "label": "Maximum value per submitted skin ($)", "default": 0, "min": 0, "help": "A zero limit pauses submissions." },
-    "submissions": { "type": "number", "label": "Maximum submissions per account", "default": 25, "min": 1, "max": 80 },
     "redeem": { "type": "boolean", "label": "Claim completion rewards", "default": true },
     "source": {
       "type": "choice", "label": "How to fill gaps", "default": "inventory",
@@ -32,8 +31,7 @@
     },
     "armory": { "type": "boolean", "label": "Include Armory redemptions", "default": false,
       "help": "Estimate Armory credits and open Armory cases individually. A zero budget opens owned cases only." },
-    "armoryCredits": { "type": "number", "label": "Armory credit budget per account", "default": 0, "min": 0, "max": 1000 },
-    "opens": { "type": "number", "label": "Case opening limit per account", "default": 10, "min": 1, "max": 100 },
+    "armoryCredits": { "type": "number", "label": "Armory credit budget per account", "default": 0, "min": 0 },
     "spend": { "type": "number", "label": "Case budget per account ($)", "help": "Starts with owned cases. A zero budget prevents cash purchases.", "default": 0, "min": 0 },
     "reserve": { "type": "number", "label": "Cash reserve per account ($)", "default": 0, "min": 0 }
   }

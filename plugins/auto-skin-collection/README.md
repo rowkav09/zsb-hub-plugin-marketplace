@@ -5,7 +5,7 @@ Work through skin collections on farm accounts from **Farming → Skin Collectio
 1. Open **Run once** and choose the accounts and collections to work on. **All purchasable collections** uses the live case shop. **Only named collections** accepts exact names from the game's Skin Collection page.
 2. Use **Run limits** to choose the submission value limit and how to fill gaps. Select inventory, owned cases, or purchases within a cash budget.
 3. Turn on **Include Armory redemptions** if wanted. A zero credit budget lets the run open owned Armory cases.
-4. Select **Preview**, review the per-account plan, and confirm **Run previewed jobs once**. Every new run starts with a fresh preview.
+4. Select **Preview**, review the per-account plan, and confirm **Run previewed jobs once**. **Run progress** shows the active collection, account completion, and cash and Armory credits used as the run proceeds.
 
 ## Collection progress
 
@@ -15,8 +15,8 @@ Armory estimates use recorded submissions, the inventory count of matching cases
 
 Collection submissions consume one skin from the specified group. The game chooses the physical copy. The plugin checks all matching inventory copies during preview and again immediately before submitting. A favourited copy or an unknown favourite status blocks the whole group. Groups also need a complete candidate list with prices within the configured cap. The plugin verifies progress before claiming a completed reward.
 
-Each run submits eligible inventory skins, opens owned cases across the selected collections, and buys only for gaps that remain. It checks each opening, submits eligible drops during the same run, and claims completed rewards as it goes. It stops opening for a completed collection and honors the per-account caps on openings, submissions, case spend and credits. A submission value cap of zero pauses submissions. Quick openings keep the drops.
+Each run submits eligible inventory skins, opens owned cases across the selected collections, and buys only for gaps that remain. It checks each opening, submits eligible drops during the same run, and claims completed rewards as it goes. A run keeps working while cases are available within the per-account cash and Armory budgets. Completed collections, favourite protection, inventory space and account availability can finish work earlier. A submission value cap of zero pauses submissions. Quick openings keep the drops.
 
 The Armory sells bundles of ten. The preview shows the live bundle price, owned case count and a best-case credit minimum. That minimum assumes each needed opening drops a different eligible missing skin. Duplicate and rare drops can raise the cost. Armory openings run one at a time, while standard shop cases use the account's normal batch size. Interrupted or unconfirmed writes require review before automation can continue.
 
-[Download the plugin](../../downloads/auto-skin-collection-1.4.0.zip) · [ChunkyCheese's Auto Submit reference](https://discord.com/channels/1042469313820495952/1480822553173037156/1480822865153491065)
+[Download the plugin](../../downloads/auto-skin-collection-1.5.0.zip) · [ChunkyCheese's Auto Submit reference](https://discord.com/channels/1042469313820495952/1480822553173037156/1480822865153491065)

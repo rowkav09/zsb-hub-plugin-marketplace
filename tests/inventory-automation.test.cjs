@@ -120,7 +120,9 @@ test('Unconfirmed storage deposits stop the batch and require acknowledgement', 
 test('Collection completer submits approved skin groups and claims a verified reward', async t => {
   const name = 'Fixture Case', first = { _id: oid('a'), name: 'First skin' }, second = { _id: oid('b'), name: 'Second skin' };
   const collection = { submittedSkingroupIds: [], redeemedCollectionRewards: [] };
-  const f = hub(t, 'auto-skin-collection', { collections: [name], maxSkin: 20, runMode: 'practice', on: true }, (_, url, opts) => {
+  const f = hub(t, 'auto-skin-collection', {
+    collections: [name], maxSkin: 20, runMode: 'practice', on: true, submissions: 1,
+  }, (_, url, opts) => {
     if (url.searchParams.get('all') === 'true') return ok({ skinCollections: [{ name }] });
     if (opts.method === 'POST') {
       collection.submittedSkingroupIds.push(opts.body.id);
@@ -197,9 +199,10 @@ test('Collection progress shows all collection cards and all Hub accounts indepe
 });
 
 test('Collection buying is capped and openings are verified without auto-sell', async t => {
-  const name = 'Fixture Case', group = { _id: oid('a'), name: 'Missing skin' }, item = { _id: oid('c'), name, price: 4, rankNeeded: 2 };
+  const name = 'Fixture Case', group = { _id: oid('a'), name: 'Missing skin' }, item = { _id: oid('c'), name, price: 0.1, rankNeeded: 2 };
   let held = 1;
-  const f = hub(t, 'auto-skin-collection', { collections: [name], source: 'buy', spend: 9, opens: 8, reserve: 2 }, (_, url, opts) => {
+  let inFlight;
+  const f = hub(t, 'auto-skin-collection', { collections: [name], source: 'buy', spend: 1.39, opens: 8, reserve: 2 }, (_, url, opts) => {
     if (url.pathname === '/') return { kind: 'ok', body: '{"buildId":"fixture"}' };
     if (url.pathname.includes('/cases/cases.json')) return ok({ pageProps: { cases: JSON.stringify([item]) } });
     if (url.pathname.includes('/cases/collections.json')) return ok({ pageProps: { cases: '[]' } });
@@ -213,14 +216,24 @@ test('Collection buying is capped and openings are verified without auto-sell', 
     }
     assert.equal(url.pathname, '/api/open/case');
     assert.equal(opts.body.autoOpen, false);
+    if (!inFlight && f.posts.some(post => post.url === '/api/cases' && post.method === 'POST')) {
+      inFlight = f.blocks().find(b => b.title === 'Run progress').blocks;
+    }
     held -= Number(opts.body.count);
     return ok([]);
   });
   await f.action('preview');
-  assert.deepEqual(f.preview(), [['A', name, '1 owned · open first', '—'], ['A', name, 'Buy as needed after owned cases', '$4 per case']]);
+  assert.deepEqual(f.preview(), [['A', name, '1 owned · open first', '—'], ['A', name, 'Buy as needed after owned cases', '$0.1 per case']]);
   assert.equal((await f.action('apply', f.approval().arg)).ok, true);
-  assert.deepEqual(f.posts.map(post => post.body.amount ?? post.body.count), ['1', 2, '2']);
+  assert.deepEqual(f.posts.map(post => post.body.amount ?? post.body.count), [
+    '1', 2, '2', 2, '2', 2, '2', 2, '2', 2, '2', 2, '2', 1, '1',
+  ]);
   assert.equal(held, 0);
+  assert.deepEqual(inFlight[0].rows[0], ['A', name, { bar: 0, text: '0 / 1' }, 'Opening cases']);
+  assert.deepEqual(inFlight[1].rows[0][2], { bar: 20 / 139, text: '$0.2 / $1.39' });
+  const final = f.blocks().find(b => b.title === 'Run progress').blocks[0].rows[0];
+  assert.deepEqual(final[2], { bar: 130 / 139, text: '$1.3 / $1.39' });
+  assert.match(final.at(-1), /14 opened/);
 });
 
 test('All purchasable collections uses a separate Armory budget and opens Armory cases serially', async t => {
@@ -230,7 +243,7 @@ test('All purchasable collections uses a separate Armory budget and opens Armory
   const held = new Map([[armory.id, 1]]);
   let credits = 4, mustReadStock = false;
   const f = hub(t, 'auto-skin-collection', {
-    targets: 'purchasable', source: 'buy', spend: 4, armory: true, armoryCredits: 4, opens: 5,
+    targets: 'purchasable', source: 'buy', spend: 4, armory: true, armoryCredits: 7, opens: 5,
   }, (_, url, opts) => {
     if (url.pathname === '/') return { kind: 'ok', body: '{"buildId":"fixture"}' };
     if (url.pathname.endsWith('/cases/cases.json')) return ok({ pageProps: { cases: [standard] } });
@@ -269,12 +282,12 @@ test('All purchasable collections uses a separate Armory budget and opens Armory
   assert.equal(f.posts.length, 0);
   const result = await f.action('apply', f.approval().arg);
   assert.equal(result.ok, true, result.error);
-  assert.deepEqual(f.posts.filter(post => post.url.startsWith('/api/open')).map(post => post.body.count), ['1', '2', '1', '1']);
+  assert.deepEqual(f.posts.filter(post => post.url.startsWith('/api/open')).map(post => post.body.count), ['1', '2', ...Array(10).fill('1')]);
   assert.equal(f.posts[0].body.id, armory.id);
-  assert.equal(held.get(armory.id), 8);
-  await f.action('preview');
-  assert(f.preview().some(row => row[1] === armory.name && row[2].startsWith('8 owned · open first')));
+  assert.equal(held.get(armory.id), 0);
   assert.equal(f.posts.filter(post => post.method === 'PATCH').length, 1);
+  const final = f.blocks().find(b => b.title === 'Run progress').blocks[0].rows[0];
+  assert.deepEqual(final[3], { bar: 4 / 7, text: '4 / 7' });
 });
 
 test('Collection run submits fresh drops, then claims the reward without buying or opening extra cases', async t => {

@@ -3,10 +3,13 @@
 const { availablePrice, bounded, createBatch, idOk, money, notFavorite, Unconfirmed } = require('./farm-batch');
 
 const { startOverview } = require('./overview');
+const { createRunProgress } = require('./run-progress');
 
 const COLLECTION = '/api/skinCollection';
 const ARMORY = '/api/armory';
 const ARMORY_BUNDLE = 10;
+const cents = value => Math.floor(value * 100 + 1e-7);
+const priceCents = value => Math.ceil(value * 100 - 1e-7);
 const fold = value => value.trim().toLowerCase();
 const baseName = value => fold(value.replace(/^StatTrak(?:™)?\s+|^Souvenir\s+/i, '')
   .replace(/\s*\((?:Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)$/i, ''));
@@ -16,13 +19,16 @@ function limits(api) {
   const all = api.get('targets') === 'purchasable';
   if (!all && !names.length) throw Error('Enter at least one exact collection name.');
   const useArmory = api.get('armory') === true;
-  const credits = bounded(api.get('armoryCredits'), 0, 1000);
+  const credits = useArmory ? Math.floor(api.get('armoryCredits')) : 0;
   const maxSkin = api.get('maxSkin'), spend = api.get('spend'), reserve = api.get('reserve');
-  if (![maxSkin, spend, reserve].every(value => Number.isFinite(value) && value >= 0)) throw Error('Enter valid cost limits.');
+  if (![maxSkin, spend, reserve].every(value => Number.isFinite(value) && value >= 0)
+    || ![credits, cents(spend), cents(reserve)].every(value => Number.isSafeInteger(value) && value >= 0)) {
+    throw Error('Enter valid cost limits.');
+  }
   const source = api.get('source');
   return {
-    all, names, useArmory, credits, maxSkin, source, spend, reserve, redeem: api.get('redeem') === true,
-    submissions: bounded(api.get('submissions'), 1, 80, 25), opens: bounded(api.get('opens'), 1, 100, 10),
+    all, names, useArmory, credits, maxSkin, source, cashBudget: source === 'buy' ? cents(spend) : 0,
+    reserve, redeem: api.get('redeem') === true,
   };
 }
 
@@ -39,8 +45,8 @@ function runSettings(ctx) {
       summary: (get('maxSkin') ? money(get('maxSkin')) + ' per skin' : 'Submissions paused') +
         (source === 'buy' ? ' · ' + money(get('spend')) + ' case budget' : '') +
         (armory ? ' · ' + get('armoryCredits') + ' Armory credits' : ''),
-      keys: ['maxSkin', 'source', ...(source !== 'inventory' || armory ? ['opens'] : []),
-        ...(source === 'buy' ? ['spend', 'reserve'] : []), ...(armory ? ['armoryCredits'] : []), 'submissions', 'redeem'],
+      keys: ['maxSkin', 'source',
+        ...(source === 'buy' ? ['spend', 'reserve'] : []), ...(armory ? ['armoryCredits'] : []), 'redeem'],
     },
   ];
 }
@@ -165,21 +171,19 @@ async function scanAccount(api, account, rules, plan) {
     return rules.all ? listedForCash(item) || (rules.useArmory && !!item?.creditPrice) : rules.names.includes(key);
   });
   const entries = [];
-  let scannedSubmissions = 0, armoryMinimum = 0, armoryTargets = 0, armoryOwned = 0;
+  let armoryMinimum = 0, armoryTargets = 0, armoryOwned = 0;
   for (const { name: collection } of targets) {
     try {
       const current = await progress(api, id, route, collection);
       const missing = current.groups.filter(group => !current.completed.has(group._id));
       const submit = [];
       const protectedGroups = new Set();
-      for (const group of missing) {
-        if (!rules.maxSkin || scannedSubmissions >= rules.submissions) break;
+      for (const group of rules.maxSkin ? missing : []) {
         const result = await candidates(api, id, route, group, rules.maxSkin);
         if (result.protected) protectedGroups.add(group._id);
         const { copies } = result;
         if (!copies.length) continue;
         submit.push({ group, copies });
-        scannedSubmissions++;
         const value = Math.max(...copies.map(item => item.price));
         plan.rows.push([name, collection, 'Submit ' + group.name + ' · site chooses 1 of ' + copies.length, money(value)]);
       }
@@ -191,8 +195,8 @@ async function scanAccount(api, account, rules, plan) {
       const quote = items.get(fold(collection));
       const item = quote && (rules.source !== 'inventory' || (rules.useArmory && quote.creditPrice)) ? quote : null;
       const count = held.get(item?._id) || 0;
-      const cash = rules.source === 'buy' && rules.spend > 0 && listedForCash(item);
-      const armory = rules.useArmory && !!item?.creditPrice && !cash;
+      const cash = listedForCash(item) && priceCents(item.price) > 0 && priceCents(item.price) <= rules.cashBudget;
+      const armory = rules.useArmory && !!item?.creditPrice;
       if (fillableGap && item) {
         if (count) {
           plan.rows.push([name, collection, count + ' owned · open first' + (item.creditPrice ? ' · one at a time' : ''), '—']);
@@ -209,7 +213,8 @@ async function scanAccount(api, account, rules, plan) {
       }
       const open = fillableGap > 0 && item && (count || cash || (armory && item.creditPrice <= rules.credits));
       if (submit.length || (claim && !missing.length) || open) entries.push({
-        name: collection, ids: new Set(current.groups.map(group => group._id)), submit, claim, protectedGroups, item: open ? item : null,
+        name: collection, ids: new Set(current.groups.map(group => group._id)), state: current, submit, claim, protectedGroups,
+        item: open ? item : null,
       });
       if (fillableGap && !open) plan.notes.push([name, collection + ' · ' + fillableGap + ' eligible gaps with no planned openings.']);
     } catch (error) {
@@ -217,8 +222,7 @@ async function scanAccount(api, account, rules, plan) {
       plan.notes.push([name, collection + ' · ' + error.message]);
     }
   }
-  plan.notes.push([name, 'Per run · up to ' + rules.opens + ' opens and ' + rules.submissions + ' submissions · '
-    + money(rules.spend) + ' cash cap.']);
+  plan.notes.push([name, 'Run budget · ' + money(rules.cashBudget / 100) + ' cash · ' + rules.credits + ' Armory credits.']);
   if (armoryTargets) {
     try {
       const balance = await armoryCredits(api, id, route);
@@ -263,16 +267,15 @@ function checkGroups(entry, state) {
   }
 }
 
-async function submitSkins(run, entry, drops) {
-  const { api, id, route, rules } = run;
-  if (rules.maxSkin && run.submitted < rules.submissions) {
+async function submitSkins(api, run, entry, drops) {
+  const { id, route, rules } = run;
+  if (rules.maxSkin) {
     const pending = entry.state.groups.filter(group => !entry.state.completed.has(group._id));
     const approved = new Map(entry.submit.map(({ group, copies }) => [group._id, copies]));
     // Quick opens report skins in an array. When names are present, inspect just the groups that dropped.
     const identifiable = drops?.length && drops.every(drop => idOk(drop?.skingroupId) || typeof drop?.name === 'string');
     const dropped = identifiable ? drops : null;
     for (const group of pending) {
-      if (run.submitted >= rules.submissions) break;
       if (entry.protectedGroups.has(group._id)) continue;
       const previewed = approved.get(group._id);
       if (drops === undefined && !previewed) continue;
@@ -286,6 +289,7 @@ async function submitSkins(run, entry, drops) {
         const prices = new Map(previewed.map(item => [item.id, item.price]));
         if (live.some(item => !prices.has(item.id) || item.price > prices.get(item.id))) continue;
       }
+      run.phase = 'Submitting ' + group.name;
       if (await api.write(id, route, COLLECTION, 'POST', { id: group._id, collection: entry.name }) === null) continue;
       entry.state = await readBack(() => progress(api, id, route, entry.name),
         value => value.completed.has(group._id), 'Collection submission unconfirmed for ' + group.name + '.');
@@ -295,6 +299,7 @@ async function submitSkins(run, entry, drops) {
   }
   entry.complete = entry.state.groups.every(group => entry.state.completed.has(group._id));
   if (entry.claim && entry.complete && !entry.state.rewards.has(entry.name)) {
+    run.phase = 'Claiming reward';
     if (await api.write(id, route, COLLECTION, 'PATCH', { collectionName: entry.name }) === null) {
       entry.note = 'The site refused the reward claim';
       return;
@@ -305,53 +310,69 @@ async function submitSkins(run, entry, drops) {
   }
 }
 
-async function buyStock(run, entry, me, count, readStock) {
-  const { api, id, route, rules } = run;
+async function buyStock(api, run, entry, me, count, readStock) {
+  const { id, route, rules } = run;
   const { item } = entry;
-  if (rules.source === 'buy' && rules.spend > run.cash && listedForCash(item)) {
+  if (rules.cashBudget > run.cashCents && listedForCash(item)) {
     const current = (await shop(api, id, route, false)).get(fold(entry.name));
     const rank = me?.rank?.id ?? me?.rank;
-    if (current?._id !== item._id || current.type !== item.type || !listedForCash(current) || current.price > item.price
-      || !Number.isFinite(me?.money) || !Number.isFinite(rank) || !Number.isFinite(current.rankNeeded) || rank < current.rankNeeded) return 0;
-    const budget = Math.min(rules.spend - run.cash, me.money - rules.reserve);
-    const quantity = Math.min(count, Math.floor(budget / current.price));
-    if (quantity <= 0) return 0;
-    if (await api.write(id, route, '/api/cases', 'POST', { id: item._id, type: item.type, amount: quantity }) === null) return 0;
-    run.cash += quantity * current.price;
-    return readBack(readStock, total => total === quantity, 'Case purchase unconfirmed for ' + entry.name + '.');
+    if (current?._id === item._id && current.type === item.type && listedForCash(current) && current.price <= item.price
+      && Number.isFinite(me?.money) && Number.isFinite(rank) && Number.isFinite(current.rankNeeded) && rank >= current.rankNeeded) {
+      const unitCost = priceCents(current.price);
+      const available = Math.min(rules.cashBudget - run.cashCents, cents(me.money - rules.reserve));
+      const quantity = unitCost > 0 ? Math.min(count, Math.floor(available / unitCost)) : 0;
+      if (quantity > 0) {
+        run.phase = 'Buying cases';
+        if (await api.write(id, route, '/api/cases', 'POST', { id: item._id, type: item.type, amount: quantity }) === null) {
+          entry.note = 'The site refused the case purchase';
+          return 0;
+        }
+        const held = await readBack(readStock, total => total === quantity, 'Case purchase unconfirmed for ' + entry.name + '.');
+        run.cashCents += quantity * unitCost;
+        return held;
+      }
+    }
   }
   if (!rules.useArmory || !item.creditPrice || item.creditPrice > rules.credits - run.credits) return 0;
   const current = (await shop(api, id, route, true)).get(fold(entry.name));
   const balance = await armoryCredits(api, id, route);
   if (current?._id !== item._id || current.type !== item.type || current.creditPrice !== item.creditPrice
     || balance < item.creditPrice) return 0;
-  if (await api.write(id, route, ARMORY, 'PATCH', { id: item._id, type: item.type, amount: 1 }) === null) return 0;
-  run.credits += item.creditPrice;
+  run.phase = 'Redeeming Armory cases';
+  if (await api.write(id, route, ARMORY, 'PATCH', { id: item._id, type: item.type, amount: 1 }) === null) {
+    entry.note = 'The site refused the Armory redemption';
+    return 0;
+  }
   const held = await readBack(readStock, total => total === ARMORY_BUNDLE, 'Armory redemption unconfirmed for ' + entry.name + '.');
   await readBack(() => armoryCredits(api, id, route), credits => credits === balance - item.creditPrice,
     'Armory credit balance unconfirmed for ' + entry.name + '.');
+  run.credits += item.creditPrice;
   return held;
 }
 
-async function workThroughCases(run, entry, buy) {
-  const { api, id, route, rules } = run;
+async function workThroughCases(api, run, entry, buy) {
+  const { id, route } = run;
   const { item } = entry;
   const hasGap = () => !entry.complete && entry.state.groups.some(group =>
     !entry.state.completed.has(group._id) && !entry.protectedGroups.has(group._id));
-  if (!item || entry.note || run.opened >= rules.opens || !hasGap()) return;
+  if (!item || entry.note || !hasGap()) return;
   const readStock = async () => (await stock(api, id, route)).get(item._id) || 0;
   let held = await readStock();
-  while (hasGap() && run.opened < rules.opens && (!rules.maxSkin || run.submitted < rules.submissions)) {
+  while (hasGap()) {
     if (!held && !buy) return;
     const me = await api.read(id, route, '/api/me');
     const room = inventoryRoom(me);
-    if (!room) return;
+    if (!room) {
+      entry.note = 'Inventory has no room for another drop';
+      return;
+    }
     // Armory cases always open individually. Shop cases retain the account's normal batch size.
     const perCall = item.creditPrice ? 1 : bounded(me.caseOpenCount, 1, 100, 1);
-    const count = Math.min(perCall, room, rules.opens - run.opened);
-    if (!held) held = await buyStock(run, entry, me, count, readStock);
+    const count = Math.min(perCall, room);
+    if (!held) held = await buyStock(api, run, entry, me, count, readStock);
     if (!held) return;
     const quantity = Math.min(held, count);
+    run.phase = item.creditPrice ? 'Opening Armory case' : 'Opening cases';
     const drops = await api.write(id, route, '/api/open/' + item.type, 'POST', {
       id: item._id, quickOpen: true, count: String(quantity), useEventTickets: false, caseOpenMultiplier: 1, autoOpen: false,
     });
@@ -361,16 +382,17 @@ async function workThroughCases(run, entry, buy) {
     }
     held = await readBack(readStock, total => total === held - quantity, 'Opening unconfirmed for ' + entry.name + '. Check case stock.');
     run.opened += quantity;
-    await submitSkins(run, entry, Array.isArray(drops) ? drops : null);
+    await submitSkins(api, run, entry, Array.isArray(drops) ? drops : null);
   }
 }
 
-async function apply(api, job, plan) {
+async function apply(api, job, run) {
+  const { entries } = run;
   return api.lock([[job.id, job.route]], async () => {
-    const run = { api, id: job.id, route: job.route, rules: plan.rules, submitted: 0, claimed: 0, opened: 0, cash: 0, credits: 0 };
-    const entries = job.entries.map(entry => ({ ...entry, protectedGroups: new Set(entry.protectedGroups) }));
-    async function attempt(entry, action) {
+    async function attempt(entry, phase, action) {
       if (entry.note) return;
+      run.current = entry;
+      run.phase = phase;
       try {
         await action();
       } catch (error) {
@@ -380,16 +402,17 @@ async function apply(api, job, plan) {
       }
     }
     for (const entry of entries) {
-      await attempt(entry, async () => {
+      await attempt(entry, 'Checking inventory', async () => {
         entry.state = await progress(api, job.id, job.route, entry.name);
         checkGroups(entry, entry.state);
-        await submitSkins(run, entry);
+        await submitSkins(api, run, entry);
       });
     }
     // Check owned cases for every target before charging either currency.
-    for (const entry of entries) await attempt(entry, () => workThroughCases(run, entry, false));
-    for (const entry of entries) await attempt(entry, () => workThroughCases(run, entry, true));
-    const summary = [run.opened + ' opened', run.submitted + ' submitted', run.claimed + ' claimed', money(run.cash), run.credits + ' Armory credits'];
+    for (const entry of entries) await attempt(entry, 'Checking owned cases', () => workThroughCases(api, run, entry, false));
+    for (const entry of entries) await attempt(entry, 'Checking budget and stock', () => workThroughCases(api, run, entry, true));
+    const summary = [run.opened + ' opened', run.submitted + ' submitted', run.claimed + ' claimed',
+      money(run.cashCents / 100), run.credits + ' Armory credits'];
     for (const entry of entries) {
       if (entry.note) summary.push(entry.name + ' · ' + entry.note);
       if (entry.protectedGroups.size) summary.push(entry.name + ' · ' + entry.protectedGroups.size + ' group(s) skipped for favourite protection');
@@ -403,6 +426,8 @@ module.exports = {
   start(ctx) {
     let view = 'progress';
     let needsRefresh = false;
+    let applying = false;
+    const progressDisplay = createRunProgress();
     const overview = startOverview(ctx, { shop, stock, progress, armoryCredits });
     ctx.panel.action('show-collection-progress', () => {
       view = 'progress';
@@ -419,12 +444,19 @@ module.exports = {
           ctx.panel.action(name, () => { fn(); return { message: 'Stopping after the current request.' }; });
         } else if (name === 'apply') {
           ctx.panel.action(name, async token => {
-            const result = await fn(token);
-            if (result.ok) {
-              if (view === 'progress') void overview.refresh();
-              else needsRefresh = true;
+            if (applying) return fn(token);
+            applying = true;
+            try {
+              const result = await fn(token);
+              progressDisplay.end();
+              if (result.ok) {
+                if (view === 'progress') void overview.refresh();
+                else needsRefresh = true;
+              }
+              return result;
+            } finally {
+              applying = false;
             }
-            return result;
           });
         } else ctx.panel.action(name, fn);
       },
@@ -433,7 +465,11 @@ module.exports = {
           { label: 'Collection progress', action: 'show-collection-progress', primary: view === 'progress' },
           { label: 'Run once', action: 'show-collection-run', primary: view === 'run' },
         ] },
-        ...(view === 'progress' ? overview.blocks() : [...runSettings(ctx), ...render().blocks.filter(block => block.type !== 'settings')]),
+        ...(view === 'progress' ? overview.blocks() : [
+          ...progressDisplay.blocks(),
+          ...(applying ? [] : runSettings(ctx)),
+          ...render().blocks.filter(block => block.type !== 'settings'),
+        ]),
       ] })),
     };
     // Reuse the approval and review flow without the shared runner's schedule.
@@ -448,9 +484,22 @@ module.exports = {
       columns: ['Account', 'Collection', 'Operation', 'Maximum value'], resultColumns: ['Account'],
       applyLabel: 'Run previewed jobs once',
       confirm: plan => 'Work on ' + plan.jobs.length + ' account(s)? Submit eligible existing skins and new drops, then claim completed rewards. '
-        + 'Per account, open up to ' + plan.rules.opens + ' cases and spend up to ' + money(plan.rules.spend)
+        + 'Per account, spend up to ' + money(plan.rules.cashBudget / 100)
         + ' plus ' + plan.rules.credits + ' Armory credits within the enabled sources.',
-      scan, apply,
+      scan,
+      async apply(api, job, plan) {
+        const run = progressDisplay.begin(plan, job);
+        try {
+          const summary = await apply(api, job, run);
+          run.phase = 'Finished';
+          return summary;
+        } catch (error) {
+          run.phase = error instanceof Unconfirmed ? 'Review required' : error.message;
+          throw error;
+        } finally {
+          run.current = null;
+        }
+      },
     });
     stop = () => { overview.stop(); stopBatch(); };
   },
